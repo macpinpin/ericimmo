@@ -119,7 +119,7 @@ export default function AgentPage() {
   return (
     <main className="min-h-screen bg-white" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
       {/* Header orange */}
-      <div className="bg-orange-500 text-white py-12 px-6 relative">
+      <div className="bg-orange-500 text-white py-12 px-6 relative min-h-[220px]">
         {/* Sélecteur de langue */}
         <div className="absolute top-4 right-4">
           <button
@@ -145,11 +145,21 @@ export default function AgentPage() {
           )}
         </div>
 
-        <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-8">
+        {/* Photo positionnée en absolu à gauche */}
+        <div className="absolute left-4 top-4 bottom-4 hidden md:block" style={{aspectRatio:'1/1'}}>
           <img
             src={AGENT.photo}
             alt={AGENT.name}
-            className="w-44 h-44 rounded-full border-4 border-white object-cover object-top shadow-xl flex-shrink-0"
+            className="h-full w-auto rounded-full border-4 border-white object-cover object-top shadow-xl"
+          />
+        </div>
+
+        <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-8 md:pl-56">
+          {/* Photo mobile uniquement */}
+          <img
+            src={AGENT.photo}
+            alt={AGENT.name}
+            className="w-44 h-44 rounded-full border-4 border-white object-cover object-top shadow-xl flex-shrink-0 md:hidden"
           />
           <div>
             <div className="inline-block mb-3">
