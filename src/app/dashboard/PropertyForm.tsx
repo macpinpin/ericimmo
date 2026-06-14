@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { Property } from '@/lib/types'
+import { getDistricts, getConcelhos, getFreguesias } from '@/lib/portugal'
 
 type Props = {
   agentId: string
@@ -231,15 +232,24 @@ export default function PropertyForm({ agentId, property, onSaved, onClose }: Pr
           <div className="grid grid-cols-3 gap-4">
             <div>
               <label className={labelClass}>District</label>
-              <input className={inputClass} value={form.district} onChange={e => set('district', e.target.value)} placeholder="Faro" />
+              <select className={inputClass} value={form.district} onChange={e => { set('district', e.target.value); set('concelho', ''); set('freguesia', '') }}>
+                <option value="">— Sélectionner —</option>
+                {getDistricts().map(d => <option key={d} value={d}>{d}</option>)}
+              </select>
             </div>
             <div>
               <label className={labelClass}>Concelho</label>
-              <input className={inputClass} value={form.concelho} onChange={e => set('concelho', e.target.value)} placeholder="Lagoa" />
+              <select className={inputClass} value={form.concelho} onChange={e => { set('concelho', e.target.value); set('freguesia', '') }} disabled={!form.district}>
+                <option value="">— {form.district ? 'Sélectionner' : 'Choisir district d\'abord'} —</option>
+                {getConcelhos(form.district).map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
             </div>
             <div>
               <label className={labelClass}>Freguesia</label>
-              <input className={inputClass} value={form.freguesia} onChange={e => set('freguesia', e.target.value)} placeholder="Carvoeiro" />
+              <select className={inputClass} value={form.freguesia} onChange={e => set('freguesia', e.target.value)} disabled={!form.district}>
+                <option value="">— {form.district ? 'Sélectionner' : 'Choisir district d\'abord'} —</option>
+                {getFreguesias(form.district, form.concelho).map(f => <option key={f} value={f}>{f}</option>)}
+              </select>
             </div>
           </div>
 
