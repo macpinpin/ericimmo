@@ -44,6 +44,11 @@ export const T: Record<string, Record<string, string>> = {
     it: 'Nessuna proprietà disponibile al momento.', nl: 'Geen woningen beschikbaar op dit moment.',
     ru: 'Нет доступных объектов в данный момент.', ar: 'لا توجد عقارات متاحة في الوقت الحالي.',
   },
+  valuation: {
+    fr: 'Évaluation gratuite', pt: 'Avaliação gratuita', en: 'Free valuation',
+    de: 'Kostenlose Bewertung', nl: 'Gratis waardebepaling', zh: '免费估价',
+    it: 'Valutazione gratuita', es: 'Valoración gratuita', ru: 'Бесплатная оценка', ar: 'تقييم مجاني',
+  },
   contact: {
     fr: '✉️ Contacter', pt: '✉️ Contactar', en: '✉️ Contact',
     es: '✉️ Contactar', de: '✉️ Kontakt', zh: '✉️ 联系',

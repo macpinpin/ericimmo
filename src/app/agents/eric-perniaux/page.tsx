@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import type { Property } from '@/lib/types'
 import { PropertyCard, PropertyModal } from './PropertyCard'
 import { LANGS, t, type Lang } from '@/lib/translations'
+import ValuationModal from './ValuationModal'
 
 const AGENT = {
   name: 'Eric Perniaux',
@@ -20,6 +21,7 @@ export default function AgentPage() {
   const [selected, setSelected] = useState<Property | null>(null)
   const [lang, setLang] = useState<Lang>('fr')
   const [langOpen, setLangOpen] = useState(false)
+  const [valuationOpen, setValuationOpen] = useState(false)
   const [poweredBy, setPoweredBy] = useState('Powered by SAFTI')
   const [bioFr, setBioFr] = useState('')
   const [bioTranslations, setBioTranslations] = useState<Record<string, string>>({})
@@ -106,6 +108,12 @@ export default function AgentPage() {
               <a href={`mailto:${AGENT.email}`} className="bg-orange-400 text-white font-semibold px-5 py-2 rounded-xl text-sm hover:bg-orange-300 transition-colors">
                 ✉️ Email
               </a>
+              <button
+                onClick={() => setValuationOpen(true)}
+                className="bg-white/20 hover:bg-white/30 border-2 border-white text-white font-semibold px-5 py-2 rounded-xl text-sm transition-colors"
+              >
+                🏠 {t('valuation', lang)}
+              </button>
             </div>
           </div>
         </div>
@@ -136,8 +144,11 @@ export default function AgentPage() {
         )}
       </div>
 
-      {/* Modal */}
+      {/* Modal property */}
       {selected && <PropertyModal p={selected} lang={lang} onClose={() => setSelected(null)} />}
+
+      {/* Modal évaluation */}
+      {valuationOpen && <ValuationModal lang={lang} onClose={() => setValuationOpen(false)} />}
     </main>
   )
 }
