@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
-const GROUPS = [
+const GROUPS: Array<{ [key: string]: string }> = [
   { pt: 'Portuguese', en: 'English', es: 'Spanish' },
   { de: 'German', zh: 'Mandarin Chinese', it: 'Italian' },
   { nl: 'Dutch', ru: 'Russian', ar: 'Arabic' },
