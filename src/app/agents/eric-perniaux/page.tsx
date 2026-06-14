@@ -167,7 +167,7 @@ export default function AgentPage() {
             </div>
 
             {/* Bio */}
-            <p className="text-white text-sm leading-relaxed mb-5 mt-6 text-center max-w-lg whitespace-pre-line opacity-90">
+            <p className="text-white text-base leading-relaxed mb-10 mt-6 text-center max-w-lg whitespace-pre-line">
               {bioTranslations[lang] || (lang === 'fr' ? bioFr : null) || bioFr || t('bio', lang)}
             </p>
 
