@@ -43,6 +43,7 @@ export default function DashboardPage() {
 
   const [matches, setMatches] = useState<Match[]>([])
   const [matchFilter, setMatchFilter] = useState<'all' | 'new' | 'seen' | 'dismissed'>('new')
+  const [running, setRunning] = useState(false)
 
   useEffect(() => { checkUser() }, [])
 
@@ -71,6 +72,16 @@ export default function DashboardPage() {
       .or(`buyer_agent_id.eq.${agentId},seller_agent_id.eq.${agentId}`)
       .order('created_at', { ascending: false })
     setMatches((data || []) as Match[])
+  }
+
+  async function triggerMatching() {
+    setRunning(true)
+    const res = await fetch('/api/match/run', { method: 'POST' })
+    const data = await res.json()
+    await loadMatches(user!.id)
+    setRunning(false)
+    setTab('matches')
+    alert(`Matching terminé — ${data.matched} nouveau(x) match(s) trouvé(s)`)
   }
 
   async function updateMatchStatus(id: string, status: 'seen' | 'dismissed') {
@@ -135,6 +146,10 @@ export default function DashboardPage() {
         </div>
         <div className="flex items-center gap-3">
           <a href="/agents/eric-perniaux" target="_blank" className="text-sm text-orange-500 hover:underline font-medium">Voir ma page →</a>
+          <button onClick={triggerMatching} disabled={running}
+            className="text-sm bg-orange-50 text-orange-500 border border-orange-200 hover:bg-orange-100 disabled:opacity-50 font-semibold px-4 py-1.5 rounded-lg transition-colors">
+            {running ? '⏳ Matching…' : '🔍 Lancer le matching'}
+          </button>
           <a href="/dashboard/settings" className="text-sm text-gray-400 hover:text-gray-600">⚙️ Paramètres</a>
           <button onClick={handleLogout} className="text-sm text-gray-400 hover:text-gray-600">Déconnexion</button>
         </div>
