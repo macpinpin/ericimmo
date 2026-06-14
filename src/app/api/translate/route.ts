@@ -19,41 +19,39 @@ export async function POST(req: Request) {
   const { text, title } = await req.json()
   if (!text) return NextResponse.json({ error: 'No text' }, { status: 400 })
 
-  const langList = Object.keys(LANGUAGES).join('","')
+  const prompt = `You are a luxury real estate expert and professional translator. Translate this French property listing into 9 languages.
 
-  const prompt = `Tu es un expert en immobilier de luxe. Traduis cette annonce immobilière du français vers 9 langues. Style professionnel, adapté au marché local.
+FRENCH TITLE: ${title}
+FRENCH DESCRIPTION: ${text}
 
-TITRE FR: ${title}
-DESCRIPTION FR: ${text}
-
-Réponds UNIQUEMENT avec du JSON valide, sans aucun texte avant ou après, sans balises markdown. Format exact :
-{"title":{"pt":"","en":"","es":"","de":"","zh":"","it":"","nl":"","ru":"","ar":""},"description":{"pt":"","en":"","es":"","de":"","zh":"","it":"","nl":"","ru":"","ar":""}}`
+Return a single valid JSON object with exactly this structure (no markdown, no explanation, just the JSON):
+{"title":{"pt":"...","en":"...","es":"...","de":"...","zh":"...","it":"...","nl":"...","ru":"...","ar":"..."},"description":{"pt":"...","en":"...","es":"...","de":"...","zh":"...","it":"...","nl":"...","ru":"...","ar":"..."}}`
 
   try {
     const message = await client.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 8000,
-      messages: [
-        {
-          role: 'user',
-          content: prompt,
-        },
-        {
-          role: 'assistant',
-          content: '{"title":{',
-        },
-      ],
+      system: 'You are a JSON API. You only output valid JSON, never markdown, never explanations.',
+      messages: [{ role: 'user', content: prompt }],
     })
 
     const content = message.content[0]
     if (content.type !== 'text') return NextResponse.json({ error: 'Invalid response' }, { status: 500 })
 
-    // Le modèle continue après '{"title":{'
-    const raw = '{"title":{' + content.text
-    const jsonMatch = raw.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) return NextResponse.json({ error: 'No JSON found', raw: content.text.slice(0, 300) }, { status: 500 })
+    const raw = content.text.trim()
+    // Retire les balises markdown si présentes
+    const cleaned = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim()
 
-    const translations = JSON.parse(jsonMatch[0])
+    let translations
+    try {
+      translations = JSON.parse(cleaned)
+    } catch {
+      // Tentative d'extraction du JSON
+      const match = cleaned.match(/\{[\s\S]*\}/)
+      if (!match) return NextResponse.json({ error: 'No JSON found', raw: raw.slice(0, 500) }, { status: 500 })
+      translations = JSON.parse(match[0])
+    }
+
     return NextResponse.json({ translations })
   } catch (err: any) {
     console.error('Translation error:', err)
