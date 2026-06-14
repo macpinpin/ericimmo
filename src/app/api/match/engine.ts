@@ -11,7 +11,7 @@ const resend = new Resend(process.env.RESEND_API_KEY)
 function computeScore(buyer: Buyer, property: Property): number {
   let score = 0
 
-  // Budget 30%
+  // Budget 30% — BLOQUANT si renseigné
   if (buyer.budget_min === null && buyer.budget_max === null) {
     score += 30
   } else {
@@ -19,11 +19,17 @@ function computeScore(buyer: Buyer, property: Property): number {
       (buyer.budget_min === null || property.price >= buyer.budget_min) &&
       (buyer.budget_max === null || property.price <= buyer.budget_max)
     if (inRange) score += 30
-    else if (buyer.budget_max && property.price <= buyer.budget_max * 1.15) score += 15
+    else return 0 // hors budget → pas de match
   }
 
-  // Type 20%
-  if (!buyer.property_type || buyer.property_type === property.type) score += 20
+  // Type 20% — BLOQUANT si renseigné
+  if (!buyer.property_type) {
+    score += 20
+  } else if (buyer.property_type === property.type) {
+    score += 20
+  } else {
+    return 0 // mauvais type → pas de match
+  }
 
   // Location 25%
   if (!buyer.district) {
