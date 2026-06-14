@@ -19,7 +19,8 @@ function computeScore(buyer: Buyer, property: Property): number {
       (buyer.budget_min === null || property.price >= buyer.budget_min) &&
       (buyer.budget_max === null || property.price <= buyer.budget_max)
     if (inRange) score += 30
-    else return 0 // hors budget → pas de match
+    else if (buyer.budget_max && property.price <= buyer.budget_max * 1.15) score += 15
+    else return 0 // trop loin du budget → pas de match
   }
 
   // Type 20% — BLOQUANT si renseigné
