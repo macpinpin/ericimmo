@@ -94,7 +94,7 @@ export default function AgentPage() {
               <p className="text-orange-200 text-xs font-medium text-right">{poweredBy}</p>
             </div>
             <p className="text-orange-100 mb-4 max-w-xl text-center whitespace-pre-line">
-              {lang === 'fr' ? bioFr : (bioTranslations[lang] || bioFr || t('bio', lang))}
+              {bioTranslations[lang] || (lang === 'fr' ? bioFr : null) || bioFr || t('bio', lang)}
             </p>
             <div className="flex flex-wrap gap-3">
               <a href={`tel:${AGENT.phone}`} className="bg-white text-orange-500 font-semibold px-5 py-2 rounded-xl text-sm hover:bg-orange-50 transition-colors">
