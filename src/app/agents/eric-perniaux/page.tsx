@@ -6,6 +6,7 @@ import type { Property } from '@/lib/types'
 import { PropertyCard, PropertyModal } from './PropertyCard'
 import { LANGS, t, type Lang } from '@/lib/translations'
 import ValuationModal from './ValuationModal'
+import { getDistricts, getConcelhos, getFreguesias } from '@/lib/portugal'
 
 const AGENT = {
   name: 'Eric Perniaux',
@@ -85,10 +86,10 @@ export default function AgentPage() {
     setFilters({ district: '', concelho: '', freguesia: '', type: '', bedrooms: '', minArea: '', maxPrice: '' })
   }
 
-  // Options dynamiques extraites des biens
-  const districts = useMemo(() => [...new Set(properties.map(p => p.district).filter(Boolean))].sort() as string[], [properties])
-  const concelhos = useMemo(() => [...new Set(properties.filter(p => !filters.district || p.district === filters.district).map(p => p.concelho).filter(Boolean))].sort() as string[], [properties, filters.district])
-  const freguesias = useMemo(() => [...new Set(properties.filter(p => (!filters.district || p.district === filters.district) && (!filters.concelho || p.concelho === filters.concelho)).map(p => p.freguesia).filter(Boolean))].sort() as string[], [properties, filters.district, filters.concelho])
+  // Options depuis la base de données Portugal complète
+  const districts = useMemo(() => getDistricts(), [])
+  const concelhos = useMemo(() => getConcelhos(filters.district), [filters.district])
+  const freguesias = useMemo(() => getFreguesias(filters.district, filters.concelho), [filters.district, filters.concelho])
 
   const filtered = useMemo(() => properties.filter(p => {
     if (filters.district && p.district !== filters.district) return false
