@@ -146,10 +146,6 @@ export default function DashboardPage() {
         </div>
         <div className="flex items-center gap-3">
           <a href="/agents/eric-perniaux" target="_blank" className="text-sm text-orange-500 hover:underline font-medium">Voir ma page →</a>
-          <button onClick={triggerMatching} disabled={running}
-            className="text-sm bg-orange-50 text-orange-500 border border-orange-200 hover:bg-orange-100 disabled:opacity-50 font-semibold px-4 py-1.5 rounded-lg transition-colors">
-            {running ? '⏳ Matching…' : '🔍 Lancer le matching'}
-          </button>
           <a href="/dashboard/settings" className="text-sm text-gray-400 hover:text-gray-600">⚙️ Paramètres</a>
           <button onClick={handleLogout} className="text-sm text-gray-400 hover:text-gray-600">Déconnexion</button>
         </div>
@@ -179,7 +175,8 @@ export default function DashboardPage() {
         </div>
 
         {/* Onglets */}
-        <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-6 w-fit">
+        <div className="flex items-center justify-between mb-6">
+        <div className="flex gap-1 bg-gray-100 rounded-xl p-1 w-fit">
           <button onClick={() => setTab('properties')}
             className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'properties' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
             🏡 Mes biens ({properties.length})
@@ -193,6 +190,11 @@ export default function DashboardPage() {
             🔔 Matchs ({matches.length})
             {newMatchCount > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 text-[10px] font-bold bg-orange-500 text-white rounded-full flex items-center justify-center">{newMatchCount}</span>}
           </button>
+        </div>
+        <button onClick={triggerMatching} disabled={running}
+          className="text-sm bg-orange-50 text-orange-500 border border-orange-200 hover:bg-orange-100 disabled:opacity-50 font-semibold px-4 py-2 rounded-xl transition-colors">
+          {running ? '⏳ Matching…' : '🔍 Lancer le matching'}
+        </button>
         </div>
 
         {/* ── Onglet Biens ── */}
