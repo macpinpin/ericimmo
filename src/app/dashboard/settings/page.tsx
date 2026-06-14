@@ -14,6 +14,8 @@ export default function SettingsPage() {
 
   const [poweredBy, setPoweredBy] = useState('')
   const [bio, setBio] = useState('')
+  const [bioTranslating, setBioTranslating] = useState(false)
+  const [bioTranslated, setBioTranslated] = useState(false)
   const [poweredByLoading, setPoweredByLoading] = useState(false)
   const [poweredBySuccess, setPoweredBySuccess] = useState(false)
   const [bioLoading, setBioLoading] = useState(false)
@@ -31,6 +33,27 @@ export default function SettingsPage() {
         })
     })
   }, [])
+
+  async function translateBio() {
+    if (!bio || !userId) return
+    setBioTranslating(true)
+    setBioTranslated(false)
+    try {
+      const res = await fetch('/api/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: bio, title: bio }),
+      })
+      const data = await res.json()
+      if (data.translations?.description) {
+        await supabase.from('profiles').upsert({ id: userId, bio, bio_translations: data.translations.description })
+        setBioTranslated(true)
+        setTimeout(() => setBioTranslated(false), 4000)
+      }
+    } finally {
+      setBioTranslating(false)
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -87,13 +110,25 @@ export default function SettingsPage() {
             placeholder="Mandataire immobilier spécialisé en Algarve…"
             className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-orange-400 resize-none mb-3"
           />
-          <button
-            onClick={saveBio}
-            disabled={bioLoading}
-            className="bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-semibold px-5 py-3 rounded-xl transition-colors text-sm"
-          >
-            {bioLoading ? '…' : 'Sauvegarder'}
-          </button>
+          {bioTranslated && (
+            <div className="bg-purple-50 text-purple-700 px-4 py-3 rounded-xl mb-3 font-medium text-sm">✅ Traduit en 9 langues et sauvegardé !</div>
+          )}
+          <div className="flex gap-2">
+            <button
+              onClick={saveBio}
+              disabled={bioLoading}
+              className="bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-semibold px-5 py-3 rounded-xl transition-colors text-sm"
+            >
+              {bioLoading ? '…' : 'Sauvegarder'}
+            </button>
+            <button
+              onClick={translateBio}
+              disabled={bioTranslating}
+              className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-semibold px-5 py-3 rounded-xl transition-colors text-sm flex items-center gap-2"
+            >
+              {bioTranslating ? '⏳ Traduction…' : '✨ Traduire avec Claude'}
+            </button>
+          </div>
         </div>
 
         {/* Texte "Powered by" */}
