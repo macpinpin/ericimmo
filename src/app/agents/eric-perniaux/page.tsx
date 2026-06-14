@@ -161,7 +161,7 @@ export default function AgentPage() {
           {/* Contenu centré dans l'espace restant */}
           <div className="flex-1 flex flex-col items-center justify-center py-6 pr-16">
             {/* Nom + réseau */}
-            <div className="flex flex-col items-center mb-2">
+            <div className="inline-flex flex-col items-end mb-2">
               <h1 className="text-6xl font-bold tracking-tight">{AGENT.name}</h1>
               <p className="text-white/60 text-xs font-medium mt-0.5">{poweredBy}</p>
             </div>
