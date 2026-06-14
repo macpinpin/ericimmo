@@ -76,12 +76,18 @@ export default function DashboardPage() {
 
   async function triggerMatching() {
     setRunning(true)
-    const res = await fetch('/api/match/run', { method: 'POST' })
-    const data = await res.json()
-    await loadMatches(user!.id)
-    setRunning(false)
-    setTab('matches')
-    alert(`Matching terminé — ${data.matched} nouveau(x) match(s) trouvé(s)`)
+    try {
+      const res = await fetch('/api/match/run', { method: 'POST' })
+      const data = await res.json()
+      if (data.error) throw new Error(data.error)
+      await loadMatches(user!.id)
+      setTab('matches')
+      alert(`Matching terminé — ${data.matched} nouveau(x) match(s) trouvé(s)`)
+    } catch (e: any) {
+      alert(`Erreur : ${e.message}`)
+    } finally {
+      setRunning(false)
+    }
   }
 
   async function updateMatchStatus(id: string, status: 'seen' | 'dismissed') {
