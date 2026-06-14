@@ -25,6 +25,8 @@ const FILTER_LABELS: Record<string, Record<string, string>> = {
   type: { fr: 'Type de bien', pt: 'Tipo de imóvel', en: 'Property type', de: 'Immobilientyp', nl: 'Type woning', zh: '房产类型' },
   bedrooms: { fr: 'Chambres min.', pt: 'Quartos mín.', en: 'Min. bedrooms', de: 'Mind. Zimmer', nl: 'Min. slaapk.', zh: '最少卧室' },
   minArea: { fr: 'Surface min. (m²)', pt: 'Área mín. (m²)', en: 'Min. area (m²)', de: 'Mind. Fläche (m²)', nl: 'Min. opp. (m²)', zh: '最小面积 (m²)' },
+  maxArea: { fr: 'Surface max. (m²)', pt: 'Área máx. (m²)', en: 'Max. area (m²)', de: 'Max. Fläche (m²)', nl: 'Max. opp. (m²)', zh: '最大面积 (m²)' },
+  minPrice: { fr: 'Prix min. (€)', pt: 'Preço mín. (€)', en: 'Min. price (€)', de: 'Min. Preis (€)', nl: 'Min. prijs (€)', zh: '最低价格 (€)' },
   maxPrice: { fr: 'Prix max. (€)', pt: 'Preço máx. (€)', en: 'Max. price (€)', de: 'Max. Preis (€)', nl: 'Max. prijs (€)', zh: '最高价格 (€)' },
   reset: { fr: 'Réinitialiser', pt: 'Reiniciar', en: 'Reset', de: 'Zurücksetzen', nl: 'Resetten', zh: '重置' },
   allTypes: { fr: 'Tous les types', pt: 'Todos os tipos', en: 'All types', de: 'Alle Typen', nl: 'Alle types', zh: '所有类型' },
@@ -48,7 +50,7 @@ export default function AgentPage() {
 
   const [filters, setFilters] = useState({
     district: '', concelho: '', freguesia: '',
-    type: '', bedrooms: '', minArea: '', maxPrice: '',
+    type: '', bedrooms: '', minArea: '', maxArea: '', minPrice: '', maxPrice: '',
   })
 
   useEffect(() => {
@@ -83,7 +85,7 @@ export default function AgentPage() {
   }
 
   function resetFilters() {
-    setFilters({ district: '', concelho: '', freguesia: '', type: '', bedrooms: '', minArea: '', maxPrice: '' })
+    setFilters({ district: '', concelho: '', freguesia: '', type: '', bedrooms: '', minArea: '', maxArea: '', minPrice: '', maxPrice: '' })
   }
 
   // Options depuis la base de données Portugal complète
@@ -101,6 +103,11 @@ export default function AgentPage() {
       const area = p.area_bruta_privativa || p.area_utile || 0
       if (area < parseFloat(filters.minArea)) return false
     }
+    if (filters.maxArea) {
+      const area = p.area_bruta_privativa || p.area_utile || 0
+      if (area > parseFloat(filters.maxArea)) return false
+    }
+    if (filters.minPrice && p.price < parseFloat(filters.minPrice)) return false
     if (filters.maxPrice && p.price > parseFloat(filters.maxPrice)) return false
     return true
   }), [properties, filters])
@@ -227,6 +234,16 @@ export default function AgentPage() {
             <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">{fl('minArea', lang)}</label>
               <input className={inp} type="number" value={filters.minArea} onChange={e => setFilter('minArea', e.target.value)} placeholder="Ex: 100" />
+            </div>
+            {/* Surface max */}
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">{fl('maxArea', lang)}</label>
+              <input className={inp} type="number" value={filters.maxArea} onChange={e => setFilter('maxArea', e.target.value)} placeholder="Ex: 500" />
+            </div>
+            {/* Prix min */}
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">{fl('minPrice', lang)}</label>
+              <input className={inp} type="number" value={filters.minPrice} onChange={e => setFilter('minPrice', e.target.value)} placeholder="Ex: 100000" />
             </div>
             {/* Prix max */}
             <div>
