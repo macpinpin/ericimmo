@@ -149,11 +149,11 @@ export default function AgentPage() {
         {/* Layout desktop */}
         <div className="hidden md:block relative" style={{minHeight: '224px'}}>
           {/* Photo — absolute à gauche */}
-          <div className="absolute left-12 top-1/2 -translate-y-1/2">
+          <div className="absolute top-1/2 -translate-y-1/2" style={{left: '80px'}}>
             <img
               src={AGENT.photo}
               alt={AGENT.name}
-              style={{height: '200px', width: '200px'}}
+              style={{height: '230px', width: '230px'}}
               className="rounded-full border-4 border-white object-cover object-top shadow-xl"
             />
           </div>
