@@ -18,7 +18,12 @@ export type Property = {
   type: 'villa' | 'apartment' | 'land' | 'commercial' | 'other'
   status: 'active' | 'sold' | 'draft'
   location: string
-  area: number | null
+  district: string | null
+  concelho: string | null
+  freguesia: string | null
+  area_bruta_privativa: number | null
+  area_bruta_dependente: number | null
+  area_utile: number | null
   plot: number | null
   bedrooms: number | null
   bathrooms: number | null

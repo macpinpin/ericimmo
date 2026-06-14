@@ -30,7 +30,12 @@ export default function PropertyForm({ agentId, property, onSaved, onClose }: Pr
     type: property?.type || 'villa',
     status: property?.status || 'active',
     location: property?.location || '',
-    area: property?.area?.toString() || '',
+    district: property?.district || '',
+    concelho: property?.concelho || '',
+    freguesia: property?.freguesia || '',
+    area_bruta_privativa: property?.area_bruta_privativa?.toString() || '',
+    area_bruta_dependente: property?.area_bruta_dependente?.toString() || '',
+    area_utile: property?.area_utile?.toString() || '',
     plot: property?.plot?.toString() || '',
     bedrooms: property?.bedrooms?.toString() || '',
     bathrooms: property?.bathrooms?.toString() || '',
@@ -131,7 +136,12 @@ export default function PropertyForm({ agentId, property, onSaved, onClose }: Pr
       type: form.type,
       status: form.status,
       location: form.location,
-      area: form.area ? parseFloat(form.area) : null,
+      district: form.district || null,
+      concelho: form.concelho || null,
+      freguesia: form.freguesia || null,
+      area_bruta_privativa: form.area_bruta_privativa ? parseFloat(form.area_bruta_privativa) : null,
+      area_bruta_dependente: form.area_bruta_dependente ? parseFloat(form.area_bruta_dependente) : null,
+      area_utile: form.area_utile ? parseFloat(form.area_utile) : null,
       plot: form.plot ? parseFloat(form.plot) : null,
       bedrooms: form.bedrooms ? parseInt(form.bedrooms) : null,
       bathrooms: form.bathrooms ? parseInt(form.bathrooms) : null,
@@ -213,18 +223,44 @@ export default function PropertyForm({ agentId, property, onSaved, onClose }: Pr
 
           {/* Localisation */}
           <div>
-            <label className={labelClass}>Localisation *</label>
+            <label className={labelClass}>Localisation (affichée sur l'annonce) *</label>
             <input className={inputClass} value={form.location} onChange={e => set('location', e.target.value)} required placeholder="Carvoeiro, Lagoa, Algarve" />
+          </div>
+
+          {/* District / Concelho / Freguesia */}
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className={labelClass}>District</label>
+              <input className={inputClass} value={form.district} onChange={e => set('district', e.target.value)} placeholder="Faro" />
+            </div>
+            <div>
+              <label className={labelClass}>Concelho</label>
+              <input className={inputClass} value={form.concelho} onChange={e => set('concelho', e.target.value)} placeholder="Lagoa" />
+            </div>
+            <div>
+              <label className={labelClass}>Freguesia</label>
+              <input className={inputClass} value={form.freguesia} onChange={e => set('freguesia', e.target.value)} placeholder="Carvoeiro" />
+            </div>
           </div>
 
           {/* Surfaces */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className={labelClass}>Surface habitable (m²)</label>
-              <input className={inputClass} type="number" value={form.area} onChange={e => set('area', e.target.value)} placeholder="292" />
+              <label className={labelClass}>Surface brute privative (m²)</label>
+              <input className={inputClass} type="number" value={form.area_bruta_privativa} onChange={e => set('area_bruta_privativa', e.target.value)} placeholder="292" />
             </div>
             <div>
-              <label className={labelClass}>Terrain (m²)</label>
+              <label className={labelClass}>Surface brute dépendante (m²)</label>
+              <input className={inputClass} type="number" value={form.area_bruta_dependente} onChange={e => set('area_bruta_dependente', e.target.value)} placeholder="45" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass}>Surface utile (m²)</label>
+              <input className={inputClass} type="number" value={form.area_utile} onChange={e => set('area_utile', e.target.value)} placeholder="240" />
+            </div>
+            <div>
+              <label className={labelClass}>Surface terrain (m²)</label>
               <input className={inputClass} type="number" value={form.plot} onChange={e => set('plot', e.target.value)} placeholder="9140" />
             </div>
           </div>

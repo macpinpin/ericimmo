@@ -59,6 +59,21 @@ export const T: Record<string, Record<string, string>> = {
     es: '🥽 Visita virtual 360°', de: '🥽 Virtuelle Tour 360°', zh: '🥽 虚拟参观 360°',
     it: '🥽 Tour virtuale 360°', nl: '🥽 Virtuele rondleiding 360°', ru: '🥽 Виртуальный тур 360°', ar: '🥽 جولة افتراضية 360°',
   },
+  areaBrutaPrivativa: {
+    fr: 'Surf. brute priv.', pt: 'Área bruta priv.', en: 'Gross private area',
+    de: 'Bruttofl. privat', nl: 'Bruto privé opp.', zh: '私用建筑面积',
+    it: 'Sup. lorda priv.', es: 'Sup. bruta priv.', ru: 'Жил. площадь', ar: 'مساحة خاصة',
+  },
+  areaBrutaDependente: {
+    fr: 'Surf. brute dép.', pt: 'Área bruta dep.', en: 'Gross dependent area',
+    de: 'Bruttofl. abhäng.', nl: 'Bruto afhankelijk', zh: '附属建筑面积',
+    it: 'Sup. lorda dip.', es: 'Sup. bruta dep.', ru: 'Вспом. площадь', ar: 'مساحة تابعة',
+  },
+  areaUtile: {
+    fr: 'Surface utile', pt: 'Área útil', en: 'Usable area',
+    de: 'Nutzfläche', nl: 'Netto oppervlak', zh: '实用面积',
+    it: 'Superficie utile', es: 'Superficie útil', ru: 'Полезная площадь', ar: 'المساحة المفيدة',
+  },
   sqm: {
     fr: 'm² hab.', pt: 'm² hab.', en: 'sq.ft hab.', es: 'm² hab.',
     de: 'm² Wfl.', zh: '平方米', it: 'm² ab.', nl: 'm² woon.', ru: 'м² жил.', ar: 'م² مسكن',

@@ -72,7 +72,7 @@ export function PropertyCard({ p, lang, onOpen }: { p: Property; lang: Lang; onO
         <div className="flex gap-3 text-xs text-gray-500">
           {p.bedrooms && <span>🛏 {p.bedrooms} {t('rooms', lang)}</span>}
           {p.bathrooms && <span>🚿 {p.bathrooms} {t('baths', lang)}</span>}
-          {p.area && <span>📐 {p.area} m²</span>}
+          {(p.area_bruta_privativa || p.area_utile) && <span>📐 {p.area_bruta_privativa || p.area_utile} m²</span>}
         </div>
       </div>
     </div>
@@ -171,8 +171,10 @@ export function PropertyModal({ p, lang, onClose }: { p: Property; lang: Lang; o
           <h2 className="text-xl font-bold text-gray-900 mb-1">{p.translations?.title?.[lang] || p.title}</h2>
           <p className="text-gray-400 mb-5">📍 {p.location}</p>
 
-          <div className="grid grid-cols-4 gap-3 bg-gray-50 rounded-xl p-4 mb-5">
-            {p.area && <div className="text-center"><p className="font-bold text-gray-900">{p.area}</p><p className="text-xs text-gray-400">{t('sqm', lang)}</p></div>}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-gray-50 rounded-xl p-4 mb-5">
+            {p.area_bruta_privativa && <div className="text-center"><p className="font-bold text-gray-900">{p.area_bruta_privativa}</p><p className="text-xs text-gray-400">{t('areaBrutaPrivativa', lang)}</p></div>}
+            {p.area_bruta_dependente && <div className="text-center"><p className="font-bold text-gray-900">{p.area_bruta_dependente}</p><p className="text-xs text-gray-400">{t('areaBrutaDependente', lang)}</p></div>}
+            {p.area_utile && <div className="text-center"><p className="font-bold text-gray-900">{p.area_utile}</p><p className="text-xs text-gray-400">{t('areaUtile', lang)}</p></div>}
             {p.plot && <div className="text-center"><p className="font-bold text-gray-900">{p.plot.toLocaleString()}</p><p className="text-xs text-gray-400">{t('land', lang)}</p></div>}
             {p.bedrooms && <div className="text-center"><p className="font-bold text-gray-900">{p.bedrooms}</p><p className="text-xs text-gray-400">{t('rooms', lang)}</p></div>}
             {p.bathrooms && <div className="text-center"><p className="font-bold text-gray-900">{p.bathrooms}</p><p className="text-xs text-gray-400">{t('baths', lang)}</p></div>}
