@@ -7,7 +7,7 @@ import Link from 'next/link'
 
 export default function RegisterPage() {
   const router = useRouter()
-  const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' })
+  const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '', beta: '' })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -19,6 +19,10 @@ export default function RegisterPage() {
     e.preventDefault()
     setError('')
 
+    if (form.beta.toUpperCase() !== 'HABITEO2025') {
+      setError('Code beta invalide. Contactez Eric Perniaux pour obtenir votre accès.')
+      return
+    }
     if (form.password !== form.confirm) {
       setError('Les mots de passe ne correspondent pas.')
       return
@@ -72,6 +76,13 @@ export default function RegisterPage() {
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+
+            {/* Code beta */}
+            <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 mb-2">
+              <label className="block text-sm font-semibold text-orange-700 mb-1">🔑 Code d'accès beta *</label>
+              <input className={inp} value={form.beta} onChange={e => set('beta', e.target.value)} required placeholder="Votre code d'invitation" />
+              <p className="text-xs text-orange-500 mt-1">Plateforme en accès beta — contactez Eric Perniaux pour obtenir votre code.</p>
+            </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Nom complet *</label>
