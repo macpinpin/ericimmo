@@ -119,9 +119,10 @@ export default function AgentPage() {
   return (
     <main className="min-h-screen bg-white" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
       {/* Header orange */}
-      <div className="bg-orange-500 text-white py-12 px-6 relative min-h-[220px]">
+      <div className="bg-orange-500 text-white relative overflow-hidden" style={{minHeight: '200px'}}>
+
         {/* Sélecteur de langue */}
-        <div className="absolute top-4 right-4">
+        <div className="absolute top-4 right-4 z-10">
           <button
             onClick={() => setLangOpen(o => !o)}
             className="bg-white/20 hover:bg-white/30 text-white text-sm font-semibold px-3 py-1.5 rounded-lg flex items-center gap-2 transition-colors"
@@ -145,50 +146,74 @@ export default function AgentPage() {
           )}
         </div>
 
-        {/* Photo positionnée en absolu à gauche — carré fixe pour garder le cercle */}
-        <div className="absolute left-12 top-4 bottom-4 hidden md:flex items-center">
-          <img
-            src={AGENT.photo}
-            alt={AGENT.name}
-            style={{width:'auto', height:'100%', aspectRatio:'1/1'}}
-            className="rounded-full border-4 border-white object-cover object-top shadow-xl"
-          />
-        </div>
+        {/* Layout desktop */}
+        <div className="hidden md:flex items-stretch" style={{minHeight: '200px'}}>
+          {/* Photo — hauteur 100% du bandeau, 1cm de marge */}
+          <div className="flex-shrink-0 flex items-center" style={{padding: '12px 0 12px 16px'}}>
+            <img
+              src={AGENT.photo}
+              alt={AGENT.name}
+              style={{height: '176px', width: '176px'}}
+              className="rounded-full border-4 border-white object-cover object-top shadow-xl"
+            />
+          </div>
 
-        <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-8 md:pl-64">
-          {/* Photo mobile uniquement */}
-          <img
-            src={AGENT.photo}
-            alt={AGENT.name}
-            className="w-44 h-44 rounded-full border-4 border-white object-cover object-top shadow-xl flex-shrink-0 md:hidden"
-          />
-          <div>
-            <div className="inline-block mb-3">
-              <h1 className="text-5xl font-bold">{AGENT.name}</h1>
-              <p className="text-orange-200 text-xs font-medium text-right">{poweredBy}</p>
+          {/* Contenu texte + boutons */}
+          <div className="flex flex-col justify-center px-10 py-6">
+            {/* Nom + réseau */}
+            <div className="flex items-baseline gap-3 mb-1">
+              <h1 className="text-4xl font-bold tracking-tight">{AGENT.name}</h1>
+              <span className="text-white/60 text-sm font-medium">{poweredBy}</span>
             </div>
-            <p className="text-orange-100 mb-4 max-w-xl text-center whitespace-pre-line">
+
+            {/* Bio — blanc pur, taille lisible */}
+            <p className="text-white text-sm leading-relaxed mb-5 max-w-lg whitespace-pre-line opacity-90">
               {bioTranslations[lang] || (lang === 'fr' ? bioFr : null) || bioFr || t('bio', lang)}
             </p>
-            <div className="flex flex-wrap gap-3">
-              <a href={`tel:${AGENT.phone}`} className="bg-white text-orange-500 font-semibold px-5 py-2 rounded-xl text-sm hover:bg-orange-50 transition-colors">
+
+            {/* Boutons */}
+            <div className="flex flex-wrap gap-2">
+              <a href={`tel:${AGENT.phone}`} className="bg-white text-orange-500 font-semibold px-4 py-2 rounded-xl text-sm hover:bg-orange-50 transition-colors flex items-center gap-1.5">
                 📞 {AGENT.phone}
               </a>
-              <a href={`https://wa.me/${AGENT.whatsapp}`} target="_blank" rel="noopener" className="bg-green-500 text-white font-semibold px-5 py-2 rounded-xl text-sm hover:bg-green-600 transition-colors">
+              <a href={`https://wa.me/${AGENT.whatsapp}`} target="_blank" rel="noopener" className="bg-green-500 text-white font-semibold px-4 py-2 rounded-xl text-sm hover:bg-green-600 transition-colors flex items-center gap-1.5">
                 💬 WhatsApp
               </a>
-              <a href={`mailto:${AGENT.email}`} className="bg-orange-400 text-white font-semibold px-5 py-2 rounded-xl text-sm hover:bg-orange-300 transition-colors">
+              <a href={`mailto:${AGENT.email}`} className="bg-white/15 hover:bg-white/25 border border-white/40 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors flex items-center gap-1.5">
                 ✉️ Email
               </a>
               <button
                 onClick={() => setValuationOpen(true)}
-                className="bg-white/20 hover:bg-white/30 border-2 border-white text-white font-semibold px-5 py-2 rounded-xl text-sm transition-colors"
+                className="bg-white/15 hover:bg-white/25 border border-white/40 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors flex items-center gap-1.5"
               >
                 🏠 {t('valuation', lang)}
               </button>
             </div>
           </div>
         </div>
+
+        {/* Layout mobile */}
+        <div className="flex md:hidden flex-col items-center text-center px-6 py-8 gap-4">
+          <img
+            src={AGENT.photo}
+            alt={AGENT.name}
+            className="w-32 h-32 rounded-full border-4 border-white object-cover object-top shadow-xl"
+          />
+          <div>
+            <h1 className="text-3xl font-bold mb-0.5">{AGENT.name}</h1>
+            <p className="text-white/60 text-xs mb-3">{poweredBy}</p>
+            <p className="text-white text-sm leading-relaxed mb-4 opacity-90 whitespace-pre-line">
+              {bioTranslations[lang] || (lang === 'fr' ? bioFr : null) || bioFr || t('bio', lang)}
+            </p>
+            <div className="flex flex-wrap justify-center gap-2">
+              <a href={`tel:${AGENT.phone}`} className="bg-white text-orange-500 font-semibold px-4 py-2 rounded-xl text-sm">📞 {AGENT.phone}</a>
+              <a href={`https://wa.me/${AGENT.whatsapp}`} target="_blank" rel="noopener" className="bg-green-500 text-white font-semibold px-4 py-2 rounded-xl text-sm">💬 WhatsApp</a>
+              <a href={`mailto:${AGENT.email}`} className="bg-white/15 border border-white/40 text-white font-semibold px-4 py-2 rounded-xl text-sm">✉️ Email</a>
+              <button onClick={() => setValuationOpen(true)} className="bg-white/15 border border-white/40 text-white font-semibold px-4 py-2 rounded-xl text-sm">🏠 {t('valuation', lang)}</button>
+            </div>
+          </div>
+        </div>
+
       </div>
 
       {/* Filtres */}
