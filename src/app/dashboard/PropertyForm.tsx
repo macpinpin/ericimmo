@@ -45,6 +45,7 @@ export default function PropertyForm({ agentId, property, onSaved, onClose }: Pr
     video_url: property?.video_url || '',
     ref: property?.ref || '',
   })
+  const [isOffmarket, setIsOffmarket] = useState(property?.is_offmarket ?? false)
 
   async function uploadFiles(files: FileList | File[]) {
     setUploading(true)
@@ -150,6 +151,7 @@ export default function PropertyForm({ agentId, property, onSaved, onClose }: Pr
       matterport_url: form.matterport_url || null,
       video_url: form.video_url || null,
       ref: form.ref || null,
+      is_offmarket: isOffmarket,
       translations: Object.keys(translations).length > 0 ? translations : null,
     }
 
@@ -209,6 +211,18 @@ export default function PropertyForm({ agentId, property, onSaved, onClose }: Pr
               </select>
             </div>
           </div>
+
+          {/* Off-market toggle */}
+          <button
+            type="button"
+            onClick={() => setIsOffmarket(v => !v)}
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition-all text-sm font-semibold ${isOffmarket ? 'border-amber-400 bg-amber-50 text-amber-700' : 'border-gray-200 text-gray-400 hover:border-gray-300'}`}
+          >
+            <span className={`w-10 h-6 rounded-full flex items-center transition-all ${isOffmarket ? 'bg-amber-400' : 'bg-gray-200'}`}>
+              <span className={`w-5 h-5 rounded-full bg-white shadow transition-all mx-0.5 ${isOffmarket ? 'translate-x-4' : ''}`} />
+            </span>
+            🔒 Bien off-market — non visible sur le site public, participe au matching
+          </button>
 
           {/* Prix + Réf */}
           <div className="grid grid-cols-2 gap-4">

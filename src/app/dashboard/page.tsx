@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
-import type { Property, Buyer } from '@/lib/types'
+import type { Property, Buyer, Match } from '@/lib/types'
 import PropertyForm from './PropertyForm'
 import BuyerForm from './BuyerForm'
 
@@ -13,22 +13,36 @@ const STATUS_CONFIG = {
   cold: { label: '🔵 Froid', bg: 'bg-blue-50 text-blue-600' },
 }
 
+function ScoreBar({ score }: { score: number }) {
+  const color = score >= 80 ? 'bg-green-400' : score >= 60 ? 'bg-orange-400' : 'bg-gray-300'
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+        <div className={`h-full rounded-full ${color}`} style={{ width: `${score}%` }} />
+      </div>
+      <span className={`text-sm font-bold ${score >= 80 ? 'text-green-600' : score >= 60 ? 'text-orange-500' : 'text-gray-400'}`}>{score}%</span>
+    </div>
+  )
+}
+
 export default function DashboardPage() {
   const router = useRouter()
   const [user, setUser] = useState<{ id: string; email: string } | null>(null)
   const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState<'properties' | 'buyers'>('properties')
+  const [tab, setTab] = useState<'properties' | 'buyers' | 'matches'>('properties')
 
-  // Biens
   const [properties, setProperties] = useState<Property[]>([])
   const [showPropertyForm, setShowPropertyForm] = useState(false)
   const [editProp, setEditProp] = useState<Property | null>(null)
 
-  // Acheteurs
   const [buyers, setBuyers] = useState<Buyer[]>([])
   const [showBuyerForm, setShowBuyerForm] = useState(false)
   const [editBuyer, setEditBuyer] = useState<Buyer | null>(null)
   const [buyerFilter, setBuyerFilter] = useState<'all' | 'hot' | 'warm' | 'cold'>('all')
+  const [expandedBuyer, setExpandedBuyer] = useState<string | null>(null)
+
+  const [matches, setMatches] = useState<Match[]>([])
+  const [matchFilter, setMatchFilter] = useState<'all' | 'new' | 'seen' | 'dismissed'>('new')
 
   useEffect(() => { checkUser() }, [])
 
@@ -36,7 +50,7 @@ export default function DashboardPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/login'); return }
     setUser({ id: user.id, email: user.email! })
-    await Promise.all([loadProperties(user.id), loadBuyers(user.id)])
+    await Promise.all([loadProperties(user.id), loadBuyers(user.id), loadMatches(user.id)])
     setLoading(false)
   }
 
@@ -48,6 +62,20 @@ export default function DashboardPage() {
   async function loadBuyers(agentId: string) {
     const { data } = await supabase.from('buyers').select('*').eq('agent_id', agentId).order('last_contact', { ascending: false })
     setBuyers(data || [])
+  }
+
+  async function loadMatches(agentId: string) {
+    const { data } = await supabase
+      .from('matches')
+      .select('*, buyer:buyers(*), property:properties(*)')
+      .or(`buyer_agent_id.eq.${agentId},seller_agent_id.eq.${agentId}`)
+      .order('created_at', { ascending: false })
+    setMatches((data || []) as Match[])
+  }
+
+  async function updateMatchStatus(id: string, status: 'seen' | 'dismissed') {
+    await supabase.from('matches').update({ status }).eq('id', id)
+    setMatches(prev => prev.map(m => m.id === id ? { ...m, status } : m))
   }
 
   async function deleteProperty(id: string) {
@@ -82,6 +110,12 @@ export default function DashboardPage() {
   }
 
   const filteredBuyers = buyerFilter === 'all' ? buyers : buyers.filter(b => b.status === buyerFilter)
+  const filteredMatches = matchFilter === 'all' ? matches : matches.filter(m => m.status === matchFilter)
+  const newMatchCount = matches.filter(m => m.status === 'new').length
+
+  function getBuyerMatches(buyerId: string) {
+    return matches.filter(m => m.buyer_id === buyerId && m.status !== 'dismissed')
+  }
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center">
@@ -91,7 +125,6 @@ export default function DashboardPage() {
 
   return (
     <main className="min-h-screen bg-gray-50">
-      {/* Header */}
       <header className="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <span className="text-2xl">🏠</span>
@@ -123,29 +156,31 @@ export default function DashboardPage() {
             <p className="text-3xl font-bold text-yellow-500">{buyers.filter(b => b.status === 'warm').length}</p>
             <p className="text-sm text-gray-400 mt-1">🟡 Prospects tièdes</p>
           </div>
-          <div className="bg-white rounded-xl border border-gray-100 p-5">
-            <p className="text-3xl font-bold text-blue-500">{buyers.filter(b => b.status === 'cold').length}</p>
-            <p className="text-sm text-gray-400 mt-1">🔵 Prospects froids</p>
+          <div className="bg-white rounded-xl border border-gray-100 p-5 relative">
+            <p className="text-3xl font-bold text-orange-500">{newMatchCount}</p>
+            <p className="text-sm text-gray-400 mt-1">🔔 Nouveaux matchs</p>
+            {newMatchCount > 0 && <span className="absolute top-4 right-4 w-2.5 h-2.5 rounded-full bg-orange-500 animate-pulse" />}
           </div>
         </div>
 
         {/* Onglets */}
         <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-6 w-fit">
-          <button
-            onClick={() => setTab('properties')}
-            className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'properties' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-          >
+          <button onClick={() => setTab('properties')}
+            className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'properties' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
             🏡 Mes biens ({properties.length})
           </button>
-          <button
-            onClick={() => setTab('buyers')}
-            className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'buyers' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-          >
+          <button onClick={() => setTab('buyers')}
+            className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'buyers' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
             👤 Acheteurs ({buyers.length})
+          </button>
+          <button onClick={() => setTab('matches')}
+            className={`relative px-5 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'matches' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+            🔔 Matchs ({matches.length})
+            {newMatchCount > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 text-[10px] font-bold bg-orange-500 text-white rounded-full flex items-center justify-center">{newMatchCount}</span>}
           </button>
         </div>
 
-        {/* Onglet Biens */}
+        {/* ── Onglet Biens ── */}
         {tab === 'properties' && (
           <>
             <div className="flex items-center justify-between mb-4">
@@ -155,7 +190,6 @@ export default function DashboardPage() {
                 + Ajouter un bien
               </button>
             </div>
-
             {properties.length === 0 ? (
               <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-12 text-center">
                 <p className="text-4xl mb-3">🏡</p>
@@ -170,7 +204,10 @@ export default function DashboardPage() {
                   <div key={p.id} className="bg-white rounded-xl border border-gray-100 p-5 flex items-center gap-5">
                     {p.images?.[0] && <img src={p.images[0]} alt={p.title} className="w-20 h-16 object-cover rounded-lg flex-shrink-0" />}
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-gray-900 truncate">{p.title}</h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-gray-900 truncate">{p.title}</h3>
+                        {p.is_offmarket && <span className="text-xs bg-amber-50 text-amber-600 border border-amber-200 px-2 py-0.5 rounded-full font-medium flex-shrink-0">🔒 Off-market</span>}
+                      </div>
                       <p className="text-sm text-gray-400">{p.location}</p>
                       <p className="text-sm font-bold text-orange-500 mt-1">
                         {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(p.price)}
@@ -191,7 +228,7 @@ export default function DashboardPage() {
           </>
         )}
 
-        {/* Onglet Acheteurs */}
+        {/* ── Onglet Acheteurs ── */}
         {tab === 'buyers' && (
           <>
             <div className="flex items-center justify-between mb-4">
@@ -208,7 +245,6 @@ export default function DashboardPage() {
                 + Ajouter un acheteur
               </button>
             </div>
-
             {filteredBuyers.length === 0 ? (
               <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-12 text-center">
                 <p className="text-4xl mb-3">👤</p>
@@ -219,39 +255,172 @@ export default function DashboardPage() {
               </div>
             ) : (
               <div className="grid gap-3">
-                {filteredBuyers.map(b => (
-                  <div key={b.id} className="bg-white rounded-xl border border-gray-100 p-5 flex items-center gap-5">
-                    {/* Avatar */}
-                    <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-bold text-sm flex-shrink-0">
-                      {b.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-gray-900">{b.name}</h3>
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_CONFIG[b.status].bg}`}>
-                          {STATUS_CONFIG[b.status].label}
-                        </span>
+                {filteredBuyers.map(b => {
+                  const bMatches = getBuyerMatches(b.id)
+                  const isExpanded = expandedBuyer === b.id
+                  return (
+                    <div key={b.id} className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+                      <div className="p-5 flex items-center gap-5">
+                        <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-bold text-sm flex-shrink-0">
+                          {b.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-semibold text-gray-900">{b.name}</h3>
+                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_CONFIG[b.status].bg}`}>
+                              {STATUS_CONFIG[b.status].label}
+                            </span>
+                            {bMatches.length > 0 && (
+                              <button onClick={() => setExpandedBuyer(isExpanded ? null : b.id)}
+                                className="text-xs bg-orange-50 text-orange-600 border border-orange-200 px-2 py-0.5 rounded-full font-semibold hover:bg-orange-100 transition-colors">
+                                🔔 {bMatches.length} match{bMatches.length > 1 ? 's' : ''}
+                              </button>
+                            )}
+                          </div>
+                          <div className="flex gap-4 mt-1 text-xs text-gray-400">
+                            {b.phone && <span>📞 {b.phone}</span>}
+                            {b.email && <span>✉️ {b.email}</span>}
+                            {b.nationality && <span>🌍 {b.nationality}</span>}
+                          </div>
+                          <div className="flex gap-4 mt-1 text-xs text-gray-500">
+                            {b.property_type && <span>🏠 {b.property_type}</span>}
+                            {(b.budget_min || b.budget_max) && (
+                              <span>💰 {b.budget_min ? new Intl.NumberFormat('fr-FR', { notation: 'compact' }).format(b.budget_min) : '0'}€ — {b.budget_max ? new Intl.NumberFormat('fr-FR', { notation: 'compact' }).format(b.budget_max) : '∞'}€</span>
+                            )}
+                            {b.district && <span>📍 {b.district}{b.concelho ? ` › ${b.concelho}` : ''}</span>}
+                            {b.last_contact && <span>🕐 {new Date(b.last_contact).toLocaleDateString('fr-FR')}</span>}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <button onClick={() => { setEditBuyer(b); setShowBuyerForm(true) }} className="text-sm text-gray-400 hover:text-gray-700 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors">Modifier</button>
+                          <button onClick={() => deleteBuyer(b.id)} className="text-sm text-red-400 hover:text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors">Supprimer</button>
+                        </div>
                       </div>
-                      <div className="flex gap-4 mt-1 text-xs text-gray-400">
-                        {b.phone && <span>📞 {b.phone}</span>}
-                        {b.email && <span>✉️ {b.email}</span>}
-                        {b.nationality && <span>🌍 {b.nationality}</span>}
-                      </div>
-                      <div className="flex gap-4 mt-1 text-xs text-gray-500">
-                        {b.property_type && <span>🏠 {b.property_type}</span>}
-                        {(b.budget_min || b.budget_max) && (
-                          <span>💰 {b.budget_min ? new Intl.NumberFormat('fr-FR', {notation:'compact'}).format(b.budget_min) : '0'}€ — {b.budget_max ? new Intl.NumberFormat('fr-FR', {notation:'compact'}).format(b.budget_max) : '∞'}€</span>
-                        )}
-                        {b.district && <span>📍 {b.district}{b.concelho ? ` › ${b.concelho}` : ''}</span>}
-                        {b.last_contact && <span>🕐 {new Date(b.last_contact).toLocaleDateString('fr-FR')}</span>}
-                      </div>
+                      {/* Matchs de cet acheteur */}
+                      {isExpanded && bMatches.length > 0 && (
+                        <div className="border-t border-gray-50 bg-orange-50/30 px-5 py-4 flex flex-col gap-3">
+                          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Biens correspondants</p>
+                          {bMatches.map(m => {
+                            const prop = m.property as Property | undefined
+                            if (!prop) return null
+                            return (
+                              <div key={m.id} className="bg-white rounded-xl p-4 flex items-center gap-4 border border-gray-100">
+                                {prop.images?.[0] && <img src={prop.images[0]} className="w-14 h-12 object-cover rounded-lg flex-shrink-0" />}
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <p className="font-semibold text-sm text-gray-900 truncate">{prop.title}</p>
+                                    {prop.is_offmarket && <span className="text-xs bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded font-medium">🔒 Off-market</span>}
+                                  </div>
+                                  <p className="text-xs text-gray-400">{prop.location} · {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(prop.price)}</p>
+                                  <div className="mt-2 max-w-xs"><ScoreBar score={m.score} /></div>
+                                </div>
+                                <div className="flex gap-2 flex-shrink-0">
+                                  {m.status === 'new' && <button onClick={() => updateMatchStatus(m.id, 'seen')} className="text-xs px-3 py-1.5 bg-green-50 text-green-600 rounded-lg font-medium hover:bg-green-100 transition-colors">✓ Vu</button>}
+                                  <button onClick={() => updateMatchStatus(m.id, 'dismissed')} className="text-xs px-3 py-1.5 bg-gray-50 text-gray-400 rounded-lg font-medium hover:bg-gray-100 transition-colors">✕ Ignorer</button>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
                     </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <button onClick={() => { setEditBuyer(b); setShowBuyerForm(true) }} className="text-sm text-gray-400 hover:text-gray-700 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors">Modifier</button>
-                      <button onClick={() => deleteBuyer(b.id)} className="text-sm text-red-400 hover:text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors">Supprimer</button>
-                    </div>
-                  </div>
+                  )
+                })}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ── Onglet Matchs ── */}
+        {tab === 'matches' && (
+          <>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex gap-2">
+                {(['new', 'seen', 'all', 'dismissed'] as const).map(f => (
+                  <button key={f} onClick={() => setMatchFilter(f)}
+                    className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${matchFilter === f ? 'bg-orange-500 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:border-orange-300'}`}>
+                    {f === 'new' ? `🆕 Nouveaux (${matches.filter(m => m.status === 'new').length})` : f === 'seen' ? `✓ Vus (${matches.filter(m => m.status === 'seen').length})` : f === 'all' ? `Tous (${matches.length})` : `✕ Ignorés (${matches.filter(m => m.status === 'dismissed').length})`}
+                  </button>
                 ))}
+              </div>
+            </div>
+            {filteredMatches.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-12 text-center">
+                <p className="text-4xl mb-3">🔔</p>
+                <p className="text-gray-500">Aucun match pour l'instant</p>
+                <p className="text-xs text-gray-400 mt-2">Le matching s'exécute automatiquement chaque matin à 8h</p>
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {filteredMatches.map(m => {
+                  const buyer = m.buyer as Buyer | undefined
+                  const prop = m.property as Property | undefined
+                  const isMine = m.buyer_agent_id === user?.id
+                  return (
+                    <div key={m.id} className={`bg-white rounded-xl border p-5 ${m.status === 'new' ? 'border-orange-200 shadow-sm shadow-orange-50' : 'border-gray-100'}`}>
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-3">
+                            {m.status === 'new' && <span className="w-2 h-2 rounded-full bg-orange-500 flex-shrink-0" />}
+                            <ScoreBar score={m.score} />
+                            {prop?.is_offmarket && <span className="text-xs bg-amber-50 text-amber-600 border border-amber-200 px-2 py-0.5 rounded-full font-medium">🔒 Off-market</span>}
+                            <span className="text-xs text-gray-400">{new Date(m.created_at).toLocaleDateString('fr-FR')}</span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="bg-blue-50 rounded-xl p-3">
+                              <p className="text-xs font-bold text-blue-400 uppercase tracking-wide mb-1">
+                                {isMine ? '👤 Votre acheteur' : '👤 Acheteur confrère'}
+                              </p>
+                              {isMine && buyer ? (
+                                <>
+                                  <p className="font-semibold text-sm text-gray-900">{buyer.name}</p>
+                                  <p className="text-xs text-gray-500 mt-0.5">
+                                    {[buyer.property_type, buyer.budget_max ? new Intl.NumberFormat('fr-FR', { notation: 'compact' }).format(buyer.budget_max) + '€ max' : null].filter(Boolean).join(' · ')}
+                                  </p>
+                                </>
+                              ) : (
+                                <p className="text-xs text-gray-400 italic">Coordonnées confidentielles</p>
+                              )}
+                            </div>
+                            <div className="bg-green-50 rounded-xl p-3">
+                              <p className="text-xs font-bold text-green-400 uppercase tracking-wide mb-1">
+                                {m.seller_agent_id === user?.id ? '🏡 Votre bien' : '🏡 Bien confrère'}
+                              </p>
+                              {prop ? (
+                                <>
+                                  <p className="font-semibold text-sm text-gray-900">{prop.title}</p>
+                                  <p className="text-xs text-gray-500 mt-0.5">
+                                    {prop.location} · {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(prop.price)}
+                                  </p>
+                                </>
+                              ) : <p className="text-xs text-gray-400 italic">—</p>}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-2 flex-shrink-0">
+                          {m.status === 'new' && (
+                            <button onClick={() => updateMatchStatus(m.id, 'seen')}
+                              className="text-xs px-4 py-2 bg-green-50 text-green-600 rounded-lg font-semibold hover:bg-green-100 transition-colors">
+                              ✓ Marquer comme vu
+                            </button>
+                          )}
+                          {m.status !== 'dismissed' && (
+                            <button onClick={() => updateMatchStatus(m.id, 'dismissed')}
+                              className="text-xs px-4 py-2 bg-gray-50 text-gray-400 rounded-lg font-medium hover:bg-gray-100 transition-colors">
+                              ✕ Ignorer
+                            </button>
+                          )}
+                          {m.status === 'dismissed' && (
+                            <button onClick={() => updateMatchStatus(m.id, 'seen')}
+                              className="text-xs px-4 py-2 bg-gray-50 text-gray-500 rounded-lg font-medium hover:bg-gray-100 transition-colors">
+                              ↩ Restaurer
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             )}
           </>

@@ -1,3 +1,17 @@
+export type Match = {
+  id: string
+  buyer_id: string
+  property_id: string
+  buyer_agent_id: string
+  seller_agent_id: string
+  score: number
+  status: 'new' | 'seen' | 'dismissed'
+  notified_at: string | null
+  created_at: string
+  buyer?: Buyer
+  property?: Property
+}
+
 export type Buyer = {
   id: string
   agent_id: string
@@ -56,6 +70,7 @@ export type Property = {
   matterport_url: string | null
   video_url: string | null
   ref: string | null
+  is_offmarket: boolean
   translations: {
     title?: Record<string, string>
     description?: Record<string, string>
