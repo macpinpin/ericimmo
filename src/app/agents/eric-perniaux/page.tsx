@@ -149,11 +149,11 @@ export default function AgentPage() {
         {/* Layout desktop */}
         <div className="hidden md:flex items-center" style={{minHeight: '200px'}}>
           {/* Photo à gauche */}
-          <div className="flex-shrink-0 flex items-center" style={{padding: '12px 24px 12px 16px'}}>
+          <div className="flex-shrink-0 flex items-center" style={{padding: '12px 24px 12px 48px'}}>
             <img
               src={AGENT.photo}
               alt={AGENT.name}
-              style={{height: '176px', width: '176px'}}
+              style={{height: '200px', width: '200px'}}
               className="rounded-full border-4 border-white object-cover object-top shadow-xl"
             />
           </div>
