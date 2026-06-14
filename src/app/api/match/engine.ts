@@ -71,6 +71,9 @@ export async function runMatching(debug = false) {
 
   if (!buyers?.length || !properties?.length) return { matched: 0, buyers: buyers?.length ?? 0, properties: properties?.length ?? 0 }
 
+  // Réinitialiser les matchs existants à chaque run
+  await supabase.from('matches').delete().neq('id', '00000000-0000-0000-0000-000000000000')
+
   if (debug) {
     const scores = (buyers as Buyer[]).flatMap(buyer =>
       (properties as Property[]).map(property => ({
