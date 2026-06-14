@@ -1,7 +1,7 @@
 {
   "crons": [
     {
-      "path": "/api/match?secret=HABITEO_CRON_SECRET",
+      "path": "/api/match",
       "schedule": "0 8 * * *"
     }
   ]

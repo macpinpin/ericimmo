@@ -62,8 +62,8 @@ async function getAgentEmail(agentId: string): Promise<string | null> {
 }
 
 export async function GET(req: Request) {
-  const secret = new URL(req.url).searchParams.get('secret')
-  if (secret !== process.env.CRON_SECRET) {
+  const authHeader = req.headers.get('authorization')
+  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return new Response('Unauthorized', { status: 401 })
   }
 
