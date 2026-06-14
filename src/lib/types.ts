@@ -26,5 +26,9 @@ export type Property = {
   matterport_url: string | null
   video_url: string | null
   ref: string | null
+  translations: {
+    title?: Record<string, string>
+    description?: Record<string, string>
+  } | null
   created_at: string
 }

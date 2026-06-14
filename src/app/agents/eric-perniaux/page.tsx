@@ -21,7 +21,6 @@ export default function AgentPage() {
   const [lang, setLang] = useState<Lang>('fr')
   const [langOpen, setLangOpen] = useState(false)
   const [poweredBy, setPoweredBy] = useState('Powered by SAFTI')
-  const [bio, setBio] = useState('Mandataire immobilier spécialisé en Algarve. Propriétés de prestige, investissements locatifs et projets touristiques.')
 
   useEffect(() => {
     const saved = localStorage.getItem('ep_lang') as Lang
@@ -39,7 +38,6 @@ export default function AgentPage() {
       .single()
       .then(({ data }) => {
         if (data?.powered_by) setPoweredBy(data.powered_by)
-        if (data?.bio) setBio(data.bio)
       })
   }, [])
 
@@ -91,7 +89,7 @@ export default function AgentPage() {
               <h1 className="text-5xl font-bold">{AGENT.name}</h1>
               <p className="text-orange-200 text-xs font-medium text-right">{poweredBy}</p>
             </div>
-            <p className="text-orange-100 mb-4 max-w-xl text-center whitespace-pre-line">{bio}</p>
+            <p className="text-orange-100 mb-4 max-w-xl text-center whitespace-pre-line">{t('bio', lang)}</p>
             <div className="flex flex-wrap gap-3">
               <a href={`tel:${AGENT.phone}`} className="bg-white text-orange-500 font-semibold px-5 py-2 rounded-xl text-sm hover:bg-orange-50 transition-colors">
                 📞 {AGENT.phone}

@@ -19,8 +19,8 @@ export default function PropertyForm({ agentId, property, onSaved, onClose }: Pr
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [translating, setTranslating] = useState(false)
-  const [translations, setTranslations] = useState<Record<string, string>>(
-    (property as any)?.translations || {}
+  const [translations, setTranslations] = useState<{ title?: Record<string, string>; description?: Record<string, string> }>(
+    property?.translations || {}
   )
 
   const [form, setForm] = useState({
@@ -108,7 +108,7 @@ export default function PropertyForm({ agentId, property, onSaved, onClose }: Pr
     const text = await res.text()
     let data: any = {}
     try { data = JSON.parse(text) } catch { setError('Erreur serveur : ' + text.slice(0, 200)); setTranslating(false); return }
-    if (data.translations) {
+    if (data.translations?.title && data.translations?.description) {
       setTranslations(data.translations)
     } else {
       setError('Erreur de traduction : ' + (data.error || 'inconnue'))
@@ -344,13 +344,13 @@ export default function PropertyForm({ agentId, property, onSaved, onClose }: Pr
           </div>
 
           {/* Traductions générées */}
-          {Object.keys(translations).length > 0 && (
+          {translations.description && Object.keys(translations.description).length > 0 && (
             <div className="bg-purple-50 border border-purple-100 rounded-xl p-4">
-              <p className="text-sm font-semibold text-purple-700 mb-3">✅ Traductions générées par Claude</p>
+              <p className="text-sm font-semibold text-purple-700 mb-3">✅ Traductions générées par Claude ({Object.keys(translations.description).length} langues)</p>
               <div className="grid grid-cols-3 gap-2">
-                {Object.entries(translations).map(([lang, text]) => (
-                  <div key={lang} className="bg-white rounded-lg p-2 text-xs">
-                    <p className="font-bold text-purple-600 uppercase mb-1">{lang}</p>
+                {Object.entries(translations.description).map(([code, text]) => (
+                  <div key={code} className="bg-white rounded-lg p-2 text-xs">
+                    <p className="font-bold text-purple-600 uppercase mb-1">{code} — {translations.title?.[code] || ''}</p>
                     <p className="text-gray-500 line-clamp-2">{text}</p>
                   </div>
                 ))}

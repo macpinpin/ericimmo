@@ -65,7 +65,9 @@ export function PropertyCard({ p, lang, onOpen }: { p: Property; lang: Lang; onO
 
       <div className="p-5">
         <p className="font-bold text-orange-500 text-xl mb-1">{fmtPrice(p.price)}</p>
-        <h3 className="font-semibold text-gray-900 text-sm leading-tight mb-1 line-clamp-2">{p.title}</h3>
+        <h3 className="font-semibold text-gray-900 text-sm leading-tight mb-1 line-clamp-2">
+          {p.translations?.title?.[lang] || p.title}
+        </h3>
         <p className="text-xs text-gray-400 mb-3">📍 {p.location}</p>
         <div className="flex gap-3 text-xs text-gray-500">
           {p.bedrooms && <span>🛏 {p.bedrooms} {t('rooms', lang)}</span>}
@@ -166,7 +168,7 @@ export function PropertyModal({ p, lang, onClose }: { p: Property; lang: Lang; o
         <div className="p-6">
           {p.ref && <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-1">Réf. {p.ref}</p>}
           <p className="text-3xl font-bold text-orange-500 mb-2">{fmtPrice(p.price)}</p>
-          <h2 className="text-xl font-bold text-gray-900 mb-1">{p.title}</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-1">{p.translations?.title?.[lang] || p.title}</h2>
           <p className="text-gray-400 mb-5">📍 {p.location}</p>
 
           <div className="grid grid-cols-4 gap-3 bg-gray-50 rounded-xl p-4 mb-5">
@@ -176,9 +178,9 @@ export function PropertyModal({ p, lang, onClose }: { p: Property; lang: Lang; o
             {p.bathrooms && <div className="text-center"><p className="font-bold text-gray-900">{p.bathrooms}</p><p className="text-xs text-gray-400">{t('baths', lang)}</p></div>}
           </div>
 
-          {p.description && (
+          {(p.translations?.description?.[lang] || p.description) && (
             <div>
-              {p.description.split('\n\n').map((para, i) => (
+              {(p.translations?.description?.[lang] || p.description)!.split('\n\n').map((para, i) => (
                 <p key={i} className="text-gray-600 text-sm leading-relaxed mb-3">{para}</p>
               ))}
             </div>
