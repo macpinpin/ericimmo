@@ -2,13 +2,9 @@ export const LANGS = [
   { code: 'fr', flag: '🇫🇷', label: 'FR' },
   { code: 'pt', flag: '🇵🇹', label: 'PT' },
   { code: 'en', flag: '🇬🇧', label: 'EN' },
-  { code: 'es', flag: '🇪🇸', label: 'ES' },
   { code: 'de', flag: '🇩🇪', label: 'DE' },
-  { code: 'zh', flag: '🇨🇳', label: '中文' },
-  { code: 'it', flag: '🇮🇹', label: 'IT' },
   { code: 'nl', flag: '🇳🇱', label: 'NL' },
-  { code: 'ru', flag: '🇷🇺', label: 'RU' },
-  { code: 'ar', flag: '🇸🇦', label: 'AR' },
+  { code: 'zh', flag: '🇨🇳', label: '中文' },
 ]
 
 export type Lang = typeof LANGS[number]['code']
