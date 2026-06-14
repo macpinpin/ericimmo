@@ -55,14 +55,26 @@ function computeScore(buyer: Buyer, property: Property): number {
   return score
 }
 
-export async function runMatching() {
+export async function runMatching(debug = false) {
   // 1. Fetch all data in parallel
   const [{ data: buyers }, { data: properties }] = await Promise.all([
     supabase.from('buyers').select('*'),
     supabase.from('properties').select('*').eq('status', 'active'),
   ])
 
-  if (!buyers?.length || !properties?.length) return { matched: 0 }
+  if (!buyers?.length || !properties?.length) return { matched: 0, buyers: buyers?.length ?? 0, properties: properties?.length ?? 0 }
+
+  if (debug) {
+    const scores = (buyers as Buyer[]).flatMap(buyer =>
+      (properties as Property[]).map(property => ({
+        buyer: buyer.name,
+        property: property.title,
+        status: property.status,
+        score: computeScore(buyer, property),
+      }))
+    )
+    return { debug: scores }
+  }
 
   // 2. Compute all matches
   const newMatchRows: Array<{ buyer: Buyer; property: Property; score: number }> = []
