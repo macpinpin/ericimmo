@@ -147,9 +147,9 @@ export default function AgentPage() {
         </div>
 
         {/* Layout desktop */}
-        <div className="hidden md:flex items-center" style={{minHeight: '200px'}}>
-          {/* Photo à gauche */}
-          <div className="flex-shrink-0 flex items-center" style={{padding: '12px 24px 12px 48px'}}>
+        <div className="hidden md:block relative" style={{minHeight: '224px'}}>
+          {/* Photo — absolute à gauche */}
+          <div className="absolute left-12 top-1/2 -translate-y-1/2">
             <img
               src={AGENT.photo}
               alt={AGENT.name}
@@ -158,8 +158,8 @@ export default function AgentPage() {
             />
           </div>
 
-          {/* Contenu centré dans l'espace restant */}
-          <div className="flex-1 flex flex-col items-center justify-center py-6">
+          {/* Contenu centré sur toute la largeur du bandeau */}
+          <div className="w-full flex flex-col items-center justify-center py-6" style={{minHeight: '224px'}}>
             {/* Nom + réseau */}
             <div className="inline-flex flex-col items-end mb-2">
               <h1 className="text-6xl font-bold tracking-tight">{AGENT.name}</h1>
