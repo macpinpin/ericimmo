@@ -13,6 +13,70 @@ const STATUS_CONFIG = {
   cold: { label: '🔵 Froid', bg: 'bg-blue-50 text-blue-600' },
 }
 
+function InviteTab() {
+  const [form, setForm] = useState({ name: '', email: '' })
+  const [loading, setLoading] = useState(false)
+  const [sent, setSent] = useState<string[]>([])
+  const [error, setError] = useState('')
+
+  async function handleInvite(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+    const res = await fetch('/api/invite', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(form),
+    })
+    const data = await res.json()
+    if (data.error) setError(data.error)
+    else {
+      setSent(prev => [...prev, form.email])
+      setForm({ name: '', email: '' })
+    }
+    setLoading(false)
+  }
+
+  const inp = "w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-orange-400 transition-colors"
+
+  return (
+    <div className="max-w-lg">
+      <h2 className="text-lg font-semibold text-gray-900 mb-6">Inviter un agent</h2>
+      <div className="bg-white rounded-2xl border border-gray-100 p-6">
+        <form onSubmit={handleInvite} className="flex flex-col gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Prénom / Nom</label>
+            <input className={inp} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Marie Martin" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+            <input className={inp} type="email" required value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="marie@safti.fr" />
+          </div>
+          {error && <p className="text-red-500 text-sm bg-red-50 px-4 py-2 rounded-lg">{error}</p>}
+          <button type="submit" disabled={loading}
+            className="bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition-colors">
+            {loading ? 'Envoi…' : '✉️ Envoyer l\'invitation'}
+          </button>
+        </form>
+
+        <div className="mt-4 p-4 bg-gray-50 rounded-xl">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Code beta envoyé</p>
+          <p className="text-lg font-bold text-orange-500 tracking-widest">HABITEO2025</p>
+        </div>
+      </div>
+
+      {sent.length > 0 && (
+        <div className="mt-4 bg-green-50 border border-green-100 rounded-2xl p-4">
+          <p className="text-sm font-semibold text-green-700 mb-2">✅ Invitations envoyées</p>
+          {sent.map(email => (
+            <p key={email} className="text-sm text-green-600">• {email}</p>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function ScoreBar({ score }: { score: number }) {
   const color = score >= 80 ? 'bg-green-400' : score >= 60 ? 'bg-orange-400' : 'bg-gray-300'
   return (
@@ -29,7 +93,8 @@ export default function DashboardPage() {
   const router = useRouter()
   const [user, setUser] = useState<{ id: string; email: string } | null>(null)
   const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState<'properties' | 'buyers' | 'matches'>('properties')
+  const [tab, setTab] = useState<'properties' | 'buyers' | 'matches' | 'invite'>('properties')
+  const isAdmin = user?.email === 'macpinpin@me.com'
 
   const [properties, setProperties] = useState<Property[]>([])
   const [showPropertyForm, setShowPropertyForm] = useState(false)
@@ -196,6 +261,12 @@ export default function DashboardPage() {
             🔔 Matchs ({matches.length})
             {newMatchCount > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 text-[10px] font-bold bg-orange-500 text-white rounded-full flex items-center justify-center">{newMatchCount}</span>}
           </button>
+          {isAdmin && (
+            <button onClick={() => setTab('invite')}
+              className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'invite' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+              ✉️ Invitations
+            </button>
+          )}
         </div>
         <button onClick={triggerMatching} disabled={running}
           className="text-sm bg-orange-50 text-orange-500 border border-orange-200 hover:bg-orange-100 disabled:opacity-50 font-semibold px-4 py-2 rounded-xl transition-colors">
@@ -449,6 +520,9 @@ export default function DashboardPage() {
           </>
         )}
       </div>
+
+      {/* ── Onglet Invitations (admin only) ── */}
+      {tab === 'invite' && isAdmin && <InviteTab />}
 
       {showPropertyForm && (
         <PropertyForm agentId={user!.id} property={editProp} onSaved={handlePropertySaved} onClose={() => { setShowPropertyForm(false); setEditProp(null) }} />
