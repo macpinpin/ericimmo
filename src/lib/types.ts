@@ -1,3 +1,28 @@
+export type Buyer = {
+  id: string
+  agent_id: string
+  name: string
+  email: string | null
+  phone: string | null
+  nationality: string | null
+  birthday: string | null
+  source: string | null
+  property_type: string | null
+  budget_min: number | null
+  budget_max: number | null
+  bedrooms_min: number | null
+  district: string | null
+  concelho: string | null
+  freguesia: string | null
+  area_min: number | null
+  area_max: number | null
+  status: 'hot' | 'warm' | 'cold'
+  notes: string | null
+  first_contact: string | null
+  last_contact: string | null
+  created_at: string
+}
+
 export type Agent = {
   id: string
   email: string
