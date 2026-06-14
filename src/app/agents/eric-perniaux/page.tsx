@@ -161,9 +161,9 @@ export default function AgentPage() {
           {/* Contenu texte + boutons */}
           <div className="flex flex-col justify-center px-10 py-6">
             {/* Nom + réseau */}
-            <div className="inline-block mb-1">
+            <div className="flex flex-col items-end mb-1">
               <h1 className="text-6xl font-bold tracking-tight">{AGENT.name}</h1>
-              <p className="text-white/60 text-xs font-medium mt-0.5 text-right">{poweredBy}</p>
+              <p className="text-white/60 text-xs font-medium mt-0.5">{poweredBy}</p>
             </div>
 
             {/* Bio — blanc pur, taille lisible */}
