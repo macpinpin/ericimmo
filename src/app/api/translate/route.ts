@@ -12,7 +12,7 @@ const GROUPS = [
 async function translateGroup(
   title: string,
   text: string,
-  group: Record<string, string>
+  group: { [key: string]: string }
 ): Promise<{ title: Record<string, string>; description: Record<string, string> }> {
   const codes = Object.keys(group)
   const langs = Object.entries(group).map(([code, name]) => `"${code}" = ${name}`).join(', ')
