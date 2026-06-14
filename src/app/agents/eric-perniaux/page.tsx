@@ -147,43 +147,48 @@ export default function AgentPage() {
         </div>
 
         {/* Layout desktop */}
-        <div className="hidden md:flex flex-col items-center justify-center py-8 px-6" style={{minHeight: '200px'}}>
-          {/* Photo */}
-          <img
-            src={AGENT.photo}
-            alt={AGENT.name}
-            style={{height: '176px', width: '176px'}}
-            className="rounded-full border-4 border-white object-cover object-top shadow-xl mb-4"
-          />
-
-          {/* Nom + réseau */}
-          <div className="flex flex-col items-center mb-2">
-            <h1 className="text-6xl font-bold tracking-tight">{AGENT.name}</h1>
-            <p className="text-white/60 text-xs font-medium mt-0.5">{poweredBy}</p>
+        <div className="hidden md:flex items-center" style={{minHeight: '200px'}}>
+          {/* Photo à gauche */}
+          <div className="flex-shrink-0 flex items-center" style={{padding: '12px 24px 12px 16px'}}>
+            <img
+              src={AGENT.photo}
+              alt={AGENT.name}
+              style={{height: '176px', width: '176px'}}
+              className="rounded-full border-4 border-white object-cover object-top shadow-xl"
+            />
           </div>
 
-          {/* Bio */}
-          <p className="text-white text-sm leading-relaxed mb-5 text-center max-w-lg whitespace-pre-line opacity-90">
-            {bioTranslations[lang] || (lang === 'fr' ? bioFr : null) || bioFr || t('bio', lang)}
-          </p>
+          {/* Contenu centré dans l'espace restant */}
+          <div className="flex-1 flex flex-col items-center justify-center py-6 pr-16">
+            {/* Nom + réseau */}
+            <div className="flex flex-col items-center mb-2">
+              <h1 className="text-6xl font-bold tracking-tight">{AGENT.name}</h1>
+              <p className="text-white/60 text-xs font-medium mt-0.5">{poweredBy}</p>
+            </div>
 
-          {/* Boutons */}
-          <div className="flex flex-wrap justify-center gap-2">
-            <a href={`tel:${AGENT.phone}`} className="bg-white text-orange-500 font-semibold px-4 py-2 rounded-xl text-sm hover:bg-orange-50 transition-colors flex items-center gap-1.5">
-              📞 {AGENT.phone}
-            </a>
-            <a href={`https://wa.me/${AGENT.whatsapp}`} target="_blank" rel="noopener" className="bg-green-500 text-white font-semibold px-4 py-2 rounded-xl text-sm hover:bg-green-600 transition-colors flex items-center gap-1.5">
-              💬 WhatsApp
-            </a>
-            <a href={`mailto:${AGENT.email}`} className="bg-white/15 hover:bg-white/25 border border-white/40 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors flex items-center gap-1.5">
-              ✉️ Email
-            </a>
-            <button
-              onClick={() => setValuationOpen(true)}
-              className="bg-white/15 hover:bg-white/25 border border-white/40 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors flex items-center gap-1.5"
-            >
-              🏠 {t('valuation', lang)}
-            </button>
+            {/* Bio */}
+            <p className="text-white text-sm leading-relaxed mb-5 text-center max-w-lg whitespace-pre-line opacity-90">
+              {bioTranslations[lang] || (lang === 'fr' ? bioFr : null) || bioFr || t('bio', lang)}
+            </p>
+
+            {/* Boutons */}
+            <div className="flex flex-wrap justify-center gap-2">
+              <a href={`tel:${AGENT.phone}`} className="bg-white text-orange-500 font-semibold px-4 py-2 rounded-xl text-sm hover:bg-orange-50 transition-colors flex items-center gap-1.5">
+                📞 {AGENT.phone}
+              </a>
+              <a href={`https://wa.me/${AGENT.whatsapp}`} target="_blank" rel="noopener" className="bg-green-500 text-white font-semibold px-4 py-2 rounded-xl text-sm hover:bg-green-600 transition-colors flex items-center gap-1.5">
+                💬 WhatsApp
+              </a>
+              <a href={`mailto:${AGENT.email}`} className="bg-white/15 hover:bg-white/25 border border-white/40 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors flex items-center gap-1.5">
+                ✉️ Email
+              </a>
+              <button
+                onClick={() => setValuationOpen(true)}
+                className="bg-white/15 hover:bg-white/25 border border-white/40 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors flex items-center gap-1.5"
+              >
+                🏠 {t('valuation', lang)}
+              </button>
+            </div>
           </div>
         </div>
 
