@@ -7,7 +7,7 @@ export async function POST(req: Request) {
   if (!email) return Response.json({ error: 'Email requis' }, { status: 400 })
 
   const { error } = await resend.emails.send({
-    from: 'Eric Perniaux — Habiteo <noreply@habiteo.com>',
+    from: 'Eric Perniaux — Habiteo <onboarding@resend.dev>',
     to: email,
     subject: `🏠 Votre invitation à rejoindre Habiteo`,
     html: `

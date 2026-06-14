@@ -164,7 +164,7 @@ async function sendEmails(matches: Array<{ buyer: Buyer; property: Property; sco
 
     if (buyerAgentEmail) {
       await resend.emails.send({
-        from: 'Habiteo Matching <noreply@habiteo.com>',
+        from: 'Habiteo Matching <onboarding@resend.dev>',
         to: buyerAgentEmail,
         subject: `🔔 Match ${score}% — ${buyer.name} ↔ ${property.title}`,
         html: `
@@ -194,7 +194,7 @@ async function sendEmails(matches: Array<{ buyer: Buyer; property: Property; sco
 
     if (property.is_offmarket && sellerAgentEmail && sellerAgentEmail !== buyerAgentEmail) {
       await resend.emails.send({
-        from: 'Habiteo Matching <noreply@habiteo.com>',
+        from: 'Habiteo Matching <onboarding@resend.dev>',
         to: sellerAgentEmail,
         subject: `🔔 Match ${score}% — Intérêt pour votre bien off-market ${property.ref || property.title}`,
         html: `
