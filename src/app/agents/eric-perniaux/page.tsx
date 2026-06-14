@@ -145,16 +145,17 @@ export default function AgentPage() {
           )}
         </div>
 
-        {/* Photo positionnée en absolu à gauche */}
-        <div className="absolute left-4 top-4 bottom-4 hidden md:block" style={{aspectRatio:'1/1'}}>
+        {/* Photo positionnée en absolu à gauche — carré fixe pour garder le cercle */}
+        <div className="absolute left-12 top-4 bottom-4 hidden md:flex items-center">
           <img
             src={AGENT.photo}
             alt={AGENT.name}
-            className="h-full w-auto rounded-full border-4 border-white object-cover object-top shadow-xl"
+            style={{width:'auto', height:'100%', aspectRatio:'1/1'}}
+            className="rounded-full border-4 border-white object-cover object-top shadow-xl"
           />
         </div>
 
-        <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-8 md:pl-56">
+        <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-8 md:pl-64">
           {/* Photo mobile uniquement */}
           <img
             src={AGENT.photo}
