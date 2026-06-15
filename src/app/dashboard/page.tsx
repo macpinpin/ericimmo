@@ -88,7 +88,7 @@ function PhotoCropper({ currentUrl, onUploaded, userId }: { currentUrl: string; 
   const [dropOver, setDropOver] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const imgRef = useRef<HTMLImageElement | null>(null)
-  const SIZE = 200
+  const SIZE = 230
 
   function loadFile(file: File) {
     const reader = new FileReader()
