@@ -105,6 +105,10 @@ export function PropertyModal({
   const [showVtour, setShowVtour] = useState(false)
   const [showShare, setShowShare] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [showContact, setShowContact] = useState(false)
+  const [contactForm, setContactForm] = useState({ name: '', email: '', phone: '', message: '' })
+  const [contactSending, setContactSending] = useState(false)
+  const [contactSent, setContactSent] = useState(false)
   const youtubeId = p.video_url ? getYoutubeId(p.video_url) : null
   const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/agents/${agent.slug}?bien=${p.id}` : ''
   const shareText = encodeURIComponent(`${p.title} - ${shareUrl}`)
@@ -201,15 +205,51 @@ export function PropertyModal({
               </div>
             )}
           </div>
-          <a href={`mailto:${agent.email}?subject=${p.title}`}
+          <button onClick={() => { setShowContact(v => !v); setShowShare(false) }}
             className="flex-1 text-center bg-orange-500 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-orange-600 transition-colors">
             {t('contact', lang)}
-          </a>
+          </button>
           <a href={`https://wa.me/${agent.whatsapp}?text=${encodeURIComponent(p.title + ' ' + shareUrl)}`} target="_blank" rel="noopener"
             className="flex-1 text-center bg-green-500 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-green-600 transition-colors">
             💬 WhatsApp
           </a>
         </div>
+
+        {/* Formulaire de contact */}
+        {showContact && (
+          <div className="px-6 py-5 border-b border-gray-100 bg-orange-50">
+            {contactSent ? (
+              <div className="text-center py-4">
+                <p className="text-2xl mb-2">✅</p>
+                <p className="font-semibold text-gray-900">Message envoyé !</p>
+                <p className="text-sm text-gray-500 mt-1">L'agent vous contactera rapidement.</p>
+              </div>
+            ) : (
+              <form onSubmit={async e => {
+                e.preventDefault()
+                setContactSending(true)
+                await fetch('/api/contact', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ ...contactForm, agentEmail: agent.email, propertyTitle: p.title, propertyUrl: shareUrl }),
+                })
+                setContactSending(false)
+                setContactSent(true)
+              }} className="flex flex-col gap-3">
+                <p className="text-sm font-semibold text-gray-700 mb-1">✉️ Contacter l'agent pour ce bien</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <input required className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange-400" placeholder="Votre nom *" value={contactForm.name} onChange={e => setContactForm(f => ({ ...f, name: e.target.value }))} />
+                  <input required type="email" className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange-400" placeholder="Votre email *" value={contactForm.email} onChange={e => setContactForm(f => ({ ...f, email: e.target.value }))} />
+                </div>
+                <input className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange-400" placeholder="Téléphone" value={contactForm.phone} onChange={e => setContactForm(f => ({ ...f, phone: e.target.value }))} />
+                <textarea className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange-400" rows={3} placeholder="Votre message..." value={contactForm.message} onChange={e => setContactForm(f => ({ ...f, message: e.target.value }))} />
+                <button type="submit" disabled={contactSending} className="bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors">
+                  {contactSending ? 'Envoi…' : 'Envoyer ma demande'}
+                </button>
+              </form>
+            )}
+          </div>
+        )}
 
         <div className="p-6">
           {p.ref && <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-1">Réf. {p.ref}</p>}
