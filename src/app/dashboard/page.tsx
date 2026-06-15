@@ -124,7 +124,7 @@ function PhotoCropper({ currentUrl, onUploaded, userId }: { currentUrl: string; 
       ctx.beginPath()
       ctx.arc(SIZE / 2, SIZE / 2, SIZE / 2, 0, Math.PI * 2)
       ctx.clip()
-      ctx.fillStyle = '#f97316'
+      ctx.fillStyle = '#ffffff'
       ctx.fillRect(0, 0, SIZE, SIZE)
       const iw = img.naturalWidth * z
       const ih = img.naturalHeight * z
