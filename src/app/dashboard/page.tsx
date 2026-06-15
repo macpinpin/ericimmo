@@ -201,7 +201,15 @@ function PhotoCropper({ currentUrl, onUploaded, userId }: { currentUrl: string; 
               </div>
               {currentUrl && (
                 <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1">
-                  <button type="button" onClick={() => { setImgSrc(currentUrl); setZoom(1); setOffsetX(0); setOffsetY(0) }}
+                  <button type="button" onClick={() => {
+                    fetch(currentUrl)
+                      .then(r => r.blob())
+                      .then(blob => {
+                        const reader = new FileReader()
+                        reader.onload = ev => { setImgSrc(ev.target?.result as string); setZoom(1); setOffsetX(0); setOffsetY(0) }
+                        reader.readAsDataURL(blob)
+                      })
+                  }}
                     className="cursor-pointer text-white text-xs font-semibold bg-white/20 hover:bg-white/30 px-2 py-1 rounded-lg">
                     ✏️ Modifier
                   </button>
