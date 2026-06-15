@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import type { Property, Buyer, Match } from '@/lib/types'
@@ -77,26 +77,167 @@ function InviteTab() {
   )
 }
 
+function PhotoCropper({ currentUrl, onUploaded, userId }: { currentUrl: string; onUploaded: (url: string) => void; userId: string }) {
+  const [imgSrc, setImgSrc] = useState<string | null>(null)
+  const [zoom, setZoom] = useState(1)
+  const [offsetX, setOffsetX] = useState(0)
+  const [offsetY, setOffsetY] = useState(0)
+  const [dragging, setDragging] = useState(false)
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
+  const [uploading, setUploading] = useState(false)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const imgRef = useRef<HTMLImageElement | null>(null)
+  const SIZE = 200
+
+  function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = ev => {
+      setImgSrc(ev.target?.result as string)
+      setZoom(1); setOffsetX(0); setOffsetY(0)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  function drawCanvas(src: string, z: number, ox: number, oy: number) {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+    const img = imgRef.current || new Image()
+    imgRef.current = img
+    img.onload = () => {
+      ctx.clearRect(0, 0, SIZE, SIZE)
+      ctx.save()
+      ctx.beginPath()
+      ctx.arc(SIZE / 2, SIZE / 2, SIZE / 2, 0, Math.PI * 2)
+      ctx.clip()
+      const scale = z
+      const iw = img.naturalWidth * scale
+      const ih = img.naturalHeight * scale
+      const x = (SIZE - iw) / 2 + ox
+      const y = (SIZE - ih) / 2 + oy
+      ctx.drawImage(img, x, y, iw, ih)
+      ctx.restore()
+    }
+    if (img.src !== src) img.src = src
+    else img.onload?.(new Event('load'))
+  }
+
+  useEffect(() => {
+    if (imgSrc) drawCanvas(imgSrc, zoom, offsetX, offsetY)
+  }, [imgSrc, zoom, offsetX, offsetY])
+
+  function onMouseDown(e: React.MouseEvent) {
+    setDragging(true)
+    setDragStart({ x: e.clientX - offsetX, y: e.clientY - offsetY })
+  }
+  function onMouseMove(e: React.MouseEvent) {
+    if (!dragging) return
+    setOffsetX(e.clientX - dragStart.x)
+    setOffsetY(e.clientY - dragStart.y)
+  }
+  function onMouseUp() { setDragging(false) }
+
+  async function handleUpload() {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    setUploading(true)
+    canvas.toBlob(async blob => {
+      if (!blob) { setUploading(false); return }
+      const path = `agents/${userId}/photo.jpg`
+      const { error } = await supabase.storage.from('agent-photos').upload(path, blob, { upsert: true, contentType: 'image/jpeg' })
+      if (error) { alert('Erreur upload : ' + error.message); setUploading(false); return }
+      const { data } = supabase.storage.from('agent-photos').getPublicUrl(path)
+      onUploaded(data.publicUrl + '?t=' + Date.now())
+      setImgSrc(null)
+      setUploading(false)
+    }, 'image/jpeg', 0.92)
+  }
+
+  return (
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-2">Photo de profil</label>
+      <div className="flex items-start gap-6">
+        {/* Aperçu actuel ou canvas */}
+        <div className="flex-shrink-0">
+          {imgSrc ? (
+            <div>
+              <canvas
+                ref={canvasRef}
+                width={SIZE} height={SIZE}
+                className="rounded-full border-4 border-orange-200 cursor-grab active:cursor-grabbing"
+                style={{ width: SIZE, height: SIZE }}
+                onMouseDown={onMouseDown}
+                onMouseMove={onMouseMove}
+                onMouseUp={onMouseUp}
+                onMouseLeave={onMouseUp}
+              />
+              <div className="mt-2">
+                <input type="range" min={0.5} max={3} step={0.05} value={zoom}
+                  onChange={e => setZoom(parseFloat(e.target.value))}
+                  className="w-full accent-orange-500" />
+                <p className="text-xs text-gray-400 text-center">Zoom — glisse pour repositionner</p>
+              </div>
+            </div>
+          ) : (
+            <div className="w-[120px] h-[120px] rounded-full border-4 border-gray-100 overflow-hidden bg-gray-50 flex items-center justify-center">
+              {currentUrl
+                ? <img src={currentUrl} className="w-full h-full object-cover object-top" alt="photo" />
+                : <span className="text-4xl">👤</span>}
+            </div>
+          )}
+        </div>
+
+        {/* Contrôles */}
+        <div className="flex flex-col gap-2 justify-center">
+          <label className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-sm px-4 py-2 rounded-xl transition-colors">
+            📁 Choisir une photo
+            <input type="file" accept="image/*" className="hidden" onChange={onFileChange} />
+          </label>
+          {imgSrc && (
+            <button type="button" onClick={handleUpload} disabled={uploading}
+              className="bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-semibold text-sm px-4 py-2 rounded-xl transition-colors">
+              {uploading ? 'Envoi…' : '✅ Valider la photo'}
+            </button>
+          )}
+          <p className="text-xs text-gray-400">JPG, PNG — max 5 Mo</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function ProfileTab({ userId }: { userId: string }) {
   const [form, setForm] = useState({ name: '', phone: '', whatsapp: '', bio: '', powered_by: '', slug: '' })
+  const [photoUrl, setPhotoUrl] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
   useEffect(() => {
-    supabase.from('agents').select('name,phone,whatsapp,bio,powered_by,slug').eq('id', userId).single()
+    supabase.from('agents').select('name,phone,whatsapp,bio,powered_by,slug,photo_url').eq('id', userId).single()
       .then(({ data }) => {
-        if (data) setForm({
-          name: data.name || '',
-          phone: data.phone || '',
-          whatsapp: data.whatsapp || '',
-          bio: data.bio || '',
-          powered_by: data.powered_by || 'Powered by SAFTI',
-          slug: data.slug || '',
-        })
+        if (data) {
+          setForm({
+            name: data.name || '',
+            phone: data.phone || '',
+            whatsapp: data.whatsapp || '',
+            bio: data.bio || '',
+            powered_by: data.powered_by || 'Powered by SAFTI',
+            slug: data.slug || '',
+          })
+          setPhotoUrl(data.photo_url || '')
+        }
         setLoading(false)
       })
   }, [userId])
+
+  async function handlePhotoUploaded(url: string) {
+    setPhotoUrl(url)
+    await supabase.from('agents').update({ photo_url: url }).eq('id', userId)
+  }
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
@@ -122,6 +263,9 @@ function ProfileTab({ userId }: { userId: string }) {
     <div className="max-w-lg">
       <h2 className="text-lg font-semibold text-gray-900 mb-6">Mon profil public</h2>
       <div className="bg-white rounded-2xl border border-gray-100 p-6">
+        <div className="mb-6 pb-6 border-b border-gray-100">
+          <PhotoCropper currentUrl={photoUrl} onUploaded={handlePhotoUploaded} userId={userId} />
+        </div>
         <form onSubmit={handleSave} className="flex flex-col gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Nom complet</label>
