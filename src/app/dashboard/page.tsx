@@ -78,6 +78,7 @@ function InviteTab() {
 }
 
 function PhotoCropper({ currentUrl, onUploaded, userId }: { currentUrl: string; onUploaded: (url: string) => void; userId: string }) {
+  const [originalUrl, setOriginalUrl] = useState<string | null>(null)
   const [imgSrc, setImgSrc] = useState<string | null>(null)
   const [zoom, setZoom] = useState(1)
   const [offsetX, setOffsetX] = useState(0)
@@ -93,10 +94,23 @@ function PhotoCropper({ currentUrl, onUploaded, userId }: { currentUrl: string; 
   function loadFile(file: File) {
     const reader = new FileReader()
     reader.onload = ev => {
-      setImgSrc(ev.target?.result as string)
+      const src = ev.target?.result as string
+      setImgSrc(src)
+      setOriginalUrl(null) // nouvelle photo = pas d'original en DB
       setZoom(1); setOffsetX(0); setOffsetY(0)
     }
     reader.readAsDataURL(file)
+  }
+
+  function loadOriginalForEdit() {
+    const url = `https://bznztsufkektfabevojb.supabase.co/storage/v1/object/public/agent-photos/agents/${userId}/photo_original`
+    fetch(url)
+      .then(r => r.blob())
+      .then(blob => {
+        const reader = new FileReader()
+        reader.onload = ev => { setImgSrc(ev.target?.result as string); setZoom(1); setOffsetX(0); setOffsetY(0) }
+        reader.readAsDataURL(blob)
+      })
   }
 
   function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -154,8 +168,15 @@ function PhotoCropper({ currentUrl, onUploaded, userId }: { currentUrl: string; 
 
   async function handleUpload() {
     const canvas = canvasRef.current
-    if (!canvas) return
+    if (!canvas || !imgSrc) return
     setUploading(true)
+
+    // Sauvegarde l'original si c'est une nouvelle photo (pas un re-cadrage)
+    if (!originalUrl) {
+      const origBlob = await fetch(imgSrc).then(r => r.blob())
+      await supabase.storage.from('agent-photos').upload(`agents/${userId}/photo_original`, origBlob, { upsert: true })
+    }
+
     canvas.toBlob(async blob => {
       if (!blob) { setUploading(false); return }
       const path = `agents/${userId}/photo.png`
@@ -201,15 +222,7 @@ function PhotoCropper({ currentUrl, onUploaded, userId }: { currentUrl: string; 
               </div>
               {currentUrl && (
                 <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1">
-                  <button type="button" onClick={() => {
-                    fetch(currentUrl)
-                      .then(r => r.blob())
-                      .then(blob => {
-                        const reader = new FileReader()
-                        reader.onload = ev => { setImgSrc(ev.target?.result as string); setZoom(1); setOffsetX(0); setOffsetY(0) }
-                        reader.readAsDataURL(blob)
-                      })
-                  }}
+                  <button type="button" onClick={() => { setOriginalUrl(currentUrl); loadOriginalForEdit() }}
                     className="cursor-pointer text-white text-xs font-semibold bg-white/20 hover:bg-white/30 px-2 py-1 rounded-lg">
                     ✏️ Modifier
                   </button>
