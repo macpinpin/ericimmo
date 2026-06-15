@@ -84,12 +84,18 @@ function getYoutubeId(url: string): string | null {
   return match ? match[1] : null
 }
 
-export function PropertyModal({ p, lang, onClose }: { p: Property; lang: Lang; onClose: () => void }) {
+export function PropertyModal({ p, lang, onClose, fromDirectLink }: { p: Property; lang: Lang; onClose: () => void; fromDirectLink?: boolean }) {
   const [imgIdx, setImgIdx] = useState(0)
   const [showVideo, setShowVideo] = useState(false)
   const [showVtour, setShowVtour] = useState(false)
+  const [copied, setCopied] = useState(false)
   const AGENT_EMAIL = 'macpinpin@me.com'
   const youtubeId = p.video_url ? getYoutubeId(p.video_url) : null
+
+  function shareLink() {
+    const url = `${window.location.origin}/agents/eric-perniaux?bien=${p.id}`
+    navigator.clipboard.writeText(url).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2500) })
+  }
 
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
@@ -133,6 +139,9 @@ export function PropertyModal({ p, lang, onClose }: { p: Property; lang: Lang; o
               )}
             </>
           )}
+          <button onClick={onClose} className="absolute top-3 left-3 bg-black/50 text-white h-8 px-3 rounded-full flex items-center gap-1.5 hover:bg-black/70 z-10 text-sm font-medium">
+            ← {fromDirectLink ? 'Tous les biens' : ''}
+          </button>
           <button onClick={onClose} className="absolute top-3 right-3 bg-black/50 text-white w-8 h-8 rounded-full flex items-center justify-center hover:bg-black/70 z-10">✕</button>
         </div>
 
@@ -154,11 +163,17 @@ export function PropertyModal({ p, lang, onClose }: { p: Property; lang: Lang; o
               {showVideo ? '📸 Photos' : '▶ Vidéo'}
             </button>
           )}
+          <button
+            onClick={shareLink}
+            className="flex-1 text-center py-2.5 rounded-xl font-semibold text-sm transition-colors bg-blue-500 hover:bg-blue-600 text-white"
+          >
+            {copied ? '✓ Lien copié !' : '🔗 Partager'}
+          </button>
           <a href={`mailto:${AGENT_EMAIL}?subject=${p.title}`}
             className="flex-1 text-center bg-orange-500 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-orange-600 transition-colors">
             {t('contact', lang)}
           </a>
-          <a href={`https://wa.me/351961571482?text=${encodeURIComponent(p.title)}`} target="_blank" rel="noopener"
+          <a href={`https://wa.me/351961571482?text=${encodeURIComponent(p.title + ' ' + window.location.origin + '/agents/eric-perniaux?bien=' + p.id)}`} target="_blank" rel="noopener"
             className="flex-1 text-center bg-green-500 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-green-600 transition-colors">
             💬 WhatsApp
           </a>

@@ -41,17 +41,33 @@ function fl(key: string, lang: string) {
 export default function AgentPage() {
   const [properties, setProperties] = useState<Property[]>([])
   const [selected, setSelected] = useState<Property | null>(null)
+  const [fromDirectLink, setFromDirectLink] = useState(false)
   const [lang, setLang] = useState<Lang>('fr')
   const [langOpen, setLangOpen] = useState(false)
   const [valuationOpen, setValuationOpen] = useState(false)
   const [poweredBy, setPoweredBy] = useState('Powered by SAFTI')
   const [bioFr, setBioFr] = useState('')
   const [bioTranslations, setBioTranslations] = useState<Record<string, string>>({})
+  const [pendingBienId, setPendingBienId] = useState<string | null>(null)
 
   const [filters, setFilters] = useState({
     district: '', concelho: '', freguesia: '',
     type: '', bedrooms: '', minArea: '', maxArea: '', minPrice: '', maxPrice: '',
   })
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const bienId = params.get('bien')
+    if (bienId) setPendingBienId(bienId)
+  }, [])
+
+  useEffect(() => {
+    if (pendingBienId && properties.length > 0) {
+      const prop = properties.find(p => p.id === pendingBienId)
+      if (prop) { setSelected(prop); setFromDirectLink(true) }
+      setPendingBienId(null)
+    }
+  }, [pendingBienId, properties])
 
   useEffect(() => {
     const saved = localStorage.getItem('ep_lang') as Lang
@@ -322,7 +338,7 @@ export default function AgentPage() {
       </div>
 
       {/* Modal property */}
-      {selected && <PropertyModal p={selected} lang={lang} onClose={() => setSelected(null)} />}
+      {selected && <PropertyModal p={selected} lang={lang} fromDirectLink={fromDirectLink} onClose={() => { setSelected(null); setFromDirectLink(false); if (fromDirectLink) window.history.replaceState({}, '', window.location.pathname) }} />}
 
       {/* Modal évaluation */}
       {valuationOpen && <ValuationModal lang={lang} onClose={() => setValuationOpen(false)} />}
