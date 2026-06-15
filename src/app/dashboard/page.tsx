@@ -111,8 +111,15 @@ function PhotoCropper({ currentUrl, onUploaded, userId }: { currentUrl: string; 
       })
       .catch(() => fetch(currentUrl).then(r => r.blob()))
       .then(blob => {
+        const saved = localStorage.getItem(`photo_crop_${userId}`)
+        const crop = saved ? JSON.parse(saved) : { zoom: 1, offsetX: 0, offsetY: 0 }
         const reader = new FileReader()
-        reader.onload = ev => { setImgSrc(ev.target?.result as string); setZoom(1); setOffsetX(0); setOffsetY(0) }
+        reader.onload = ev => {
+          setImgSrc(ev.target?.result as string)
+          setZoom(crop.zoom)
+          setOffsetX(crop.offsetX)
+          setOffsetY(crop.offsetY)
+        }
         reader.readAsDataURL(blob)
       })
   }
@@ -180,6 +187,8 @@ function PhotoCropper({ currentUrl, onUploaded, userId }: { currentUrl: string; 
       const origBlob = await fetch(imgSrc).then(r => r.blob())
       await supabase.storage.from('agent-photos').upload(`agents/${userId}/photo_original`, origBlob, { upsert: true })
     }
+    // Mémorise zoom/position pour la prochaine modification
+    localStorage.setItem(`photo_crop_${userId}`, JSON.stringify({ zoom, offsetX, offsetY }))
 
     canvas.toBlob(async blob => {
       if (!blob) { setUploading(false); return }
