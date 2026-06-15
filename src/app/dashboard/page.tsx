@@ -103,9 +103,13 @@ function PhotoCropper({ currentUrl, onUploaded, userId }: { currentUrl: string; 
   }
 
   function loadOriginalForEdit() {
-    const url = `https://bznztsufkektfabevojb.supabase.co/storage/v1/object/public/agent-photos/agents/${userId}/photo_original`
-    fetch(url)
-      .then(r => r.blob())
+    const originalPath = `https://bznztsufkektfabevojb.supabase.co/storage/v1/object/public/agent-photos/agents/${userId}/photo_original`
+    fetch(originalPath)
+      .then(r => {
+        if (!r.ok) throw new Error('not found')
+        return r.blob()
+      })
+      .catch(() => fetch(currentUrl).then(r => r.blob()))
       .then(blob => {
         const reader = new FileReader()
         reader.onload = ev => { setImgSrc(ev.target?.result as string); setZoom(1); setOffsetX(0); setOffsetY(0) }
