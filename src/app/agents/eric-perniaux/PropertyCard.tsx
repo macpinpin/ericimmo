@@ -88,13 +88,15 @@ export function PropertyModal({ p, lang, onClose, fromDirectLink }: { p: Propert
   const [imgIdx, setImgIdx] = useState(0)
   const [showVideo, setShowVideo] = useState(false)
   const [showVtour, setShowVtour] = useState(false)
+  const [showShare, setShowShare] = useState(false)
   const [copied, setCopied] = useState(false)
   const AGENT_EMAIL = 'macpinpin@me.com'
   const youtubeId = p.video_url ? getYoutubeId(p.video_url) : null
+  const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/agents/eric-perniaux?bien=${p.id}` : ''
+  const shareText = encodeURIComponent(`${p.title} - ${shareUrl}`)
 
-  function shareLink() {
-    const url = `${window.location.origin}/agents/eric-perniaux?bien=${p.id}`
-    navigator.clipboard.writeText(url).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2500) })
+  function copyLink() {
+    navigator.clipboard.writeText(shareUrl).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2500) })
   }
 
   return (
@@ -163,12 +165,40 @@ export function PropertyModal({ p, lang, onClose, fromDirectLink }: { p: Propert
               {showVideo ? '📸 Photos' : '▶ Vidéo'}
             </button>
           )}
-          <button
-            onClick={shareLink}
-            className="flex-1 text-center py-2.5 rounded-xl font-semibold text-sm transition-colors bg-blue-500 hover:bg-blue-600 text-white"
-          >
-            {copied ? '✓ Lien copié !' : '🔗 Partager'}
-          </button>
+          <div className="relative flex-1">
+            <button
+              onClick={() => setShowShare(v => !v)}
+              className="w-full py-2.5 rounded-xl font-semibold text-sm transition-colors bg-blue-500 hover:bg-blue-600 text-white"
+            >
+              🔗 Partager
+            </button>
+            {showShare && (
+              <div className="absolute bottom-full mb-2 left-0 right-0 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-20">
+                <p className="text-xs text-gray-400 font-medium px-4 pt-3 pb-2 uppercase tracking-wide">Partager ce bien</p>
+                <a href={`https://wa.me/?text=${shareText}`} target="_blank" rel="noopener"
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700">
+                  <span className="text-xl">📱</span> WhatsApp
+                </a>
+                <a href={`https://www.facebook.com/dialog/send?link=${encodeURIComponent(shareUrl)}&app_id=966242223397117`} target="_blank" rel="noopener"
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700">
+                  <span className="text-xl">💬</span> Messenger
+                </a>
+                <a href={`mailto:?subject=${encodeURIComponent(p.title)}&body=${shareText}`}
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700">
+                  <span className="text-xl">✉️</span> Email
+                </a>
+                <a href={`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(p.title)}`} target="_blank" rel="noopener"
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700">
+                  <span className="text-xl">✈️</span> Telegram
+                </a>
+                <button onClick={copyLink}
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700 w-full border-t border-gray-100">
+                  <span className="text-xl">{copied ? '✅' : '📋'}</span>
+                  {copied ? 'Lien copié !' : 'Copier le lien'}
+                </button>
+              </div>
+            )}
+          </div>
           <a href={`mailto:${AGENT_EMAIL}?subject=${p.title}`}
             className="flex-1 text-center bg-orange-500 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-orange-600 transition-colors">
             {t('contact', lang)}
