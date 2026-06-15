@@ -9,7 +9,7 @@ export async function POST(req: Request) {
   const { error } = await resend.emails.send({
     from: 'Habiteo Leads <invitation@e-mo-tec.com>',
     to: agentEmail,
-    reply_to: email,
+    replyTo: email,
     subject: `🏠 Nouveau lead — ${propertyTitle}`,
     html: `
       <div style="font-family:sans-serif;max-width:600px;margin:0 auto">
