@@ -184,7 +184,7 @@ function PhotoCropper({ currentUrl, onUploaded, userId }: { currentUrl: string; 
                 onMouseLeave={onMouseUp}
               />
               <div className="mt-2">
-                <input type="range" min={0.5} max={3} step={0.05} value={zoom}
+                <input type="range" min={0.1} max={3} step={0.05} value={zoom}
                   onChange={e => setZoom(parseFloat(e.target.value))}
                   className="w-full accent-orange-500" />
                 <p className="text-xs text-gray-400 text-center mt-1">🔍 Zoom · glisse pour cadrer</p>
