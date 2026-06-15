@@ -219,8 +219,8 @@ export default function AgentPage() {
       {/* Filtres */}
       <div className="bg-gray-50 border-b border-gray-100 px-6 py-5">
         <div className="max-w-5xl mx-auto">
+          {/* Ligne 1 : Localisation + Type */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
-            {/* District */}
             <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">{fl('district', lang)}</label>
               <select className={inp} value={filters.district} onChange={e => { setFilter('district', e.target.value); setFilter('concelho', ''); setFilter('freguesia', '') }}>
@@ -228,7 +228,6 @@ export default function AgentPage() {
                 {districts.map(d => <option key={d} value={d}>{d}</option>)}
               </select>
             </div>
-            {/* Concelho */}
             <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">{fl('concelho', lang)}</label>
               <select className={inp} value={filters.concelho} onChange={e => { setFilter('concelho', e.target.value); setFilter('freguesia', '') }}>
@@ -236,7 +235,6 @@ export default function AgentPage() {
                 {concelhos.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
-            {/* Freguesia */}
             <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">{fl('freguesia', lang)}</label>
               <select className={inp} value={filters.freguesia} onChange={e => setFilter('freguesia', e.target.value)}>
@@ -244,7 +242,6 @@ export default function AgentPage() {
                 {freguesias.map(f => <option key={f} value={f}>{f}</option>)}
               </select>
             </div>
-            {/* Type */}
             <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">{fl('type', lang)}</label>
               <select className={inp} value={filters.type} onChange={e => setFilter('type', e.target.value)}>
@@ -257,39 +254,35 @@ export default function AgentPage() {
               </select>
             </div>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 items-end">
-            {/* Chambres */}
-            <div>
+
+          {/* Ligne 2 : Chambres + Surfaces + Prix + Reset */}
+          <div className="flex flex-wrap gap-3 items-end">
+            <div className="flex-1 min-w-[120px]">
               <label className="block text-xs font-medium text-gray-500 mb-1">{fl('bedrooms', lang)}</label>
               <select className={inp} value={filters.bedrooms} onChange={e => setFilter('bedrooms', e.target.value)}>
                 <option value="">{fl('allBeds', lang)}</option>
                 {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}+</option>)}
               </select>
             </div>
-            {/* Surface min */}
-            <div>
+            <div className="flex-1 min-w-[110px]">
               <label className="block text-xs font-medium text-gray-500 mb-1">{fl('minArea', lang)}</label>
               <input className={inp} type="number" value={filters.minArea} onChange={e => setFilter('minArea', e.target.value)} placeholder="Ex: 100" />
             </div>
-            {/* Surface max */}
-            <div>
+            <div className="flex-1 min-w-[110px]">
               <label className="block text-xs font-medium text-gray-500 mb-1">{fl('maxArea', lang)}</label>
               <input className={inp} type="number" value={filters.maxArea} onChange={e => setFilter('maxArea', e.target.value)} placeholder="Ex: 500" />
             </div>
-            {/* Prix min */}
-            <div>
+            <div className="flex-1 min-w-[130px]">
               <label className="block text-xs font-medium text-gray-500 mb-1">{fl('minPrice', lang)}</label>
-              <input className={inp} type="number" value={filters.minPrice} onChange={e => setFilter('minPrice', e.target.value)} placeholder="Ex: 100000" />
+              <input className={inp} type="number" value={filters.minPrice} onChange={e => setFilter('minPrice', e.target.value)} placeholder="Ex: 100 000" />
             </div>
-            {/* Prix max */}
-            <div>
+            <div className="flex-1 min-w-[130px]">
               <label className="block text-xs font-medium text-gray-500 mb-1">{fl('maxPrice', lang)}</label>
-              <input className={inp} type="number" value={filters.maxPrice} onChange={e => setFilter('maxPrice', e.target.value)} placeholder="Ex: 500000" />
+              <input className={inp} type="number" value={filters.maxPrice} onChange={e => setFilter('maxPrice', e.target.value)} placeholder="Ex: 500 000" />
             </div>
-            {/* Reset */}
             {hasFilters && (
-              <div>
-                <button onClick={resetFilters} className="w-full bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors">
+              <div className="flex-shrink-0">
+                <button onClick={resetFilters} className="bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors whitespace-nowrap">
                   ✕ {fl('reset', lang)}
                 </button>
               </div>
