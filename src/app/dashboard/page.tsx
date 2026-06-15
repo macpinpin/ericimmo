@@ -193,7 +193,7 @@ function PhotoCropper({ currentUrl, onUploaded, userId }: { currentUrl: string; 
               </div>
             </div>
           ) : (
-            <div className="relative group w-[120px] h-[120px]">
+            <div className="relative group w-[230px] h-[230px]">
               <div className="w-full h-full rounded-full border-4 border-gray-100 overflow-hidden bg-white flex items-center justify-center">
                 {currentUrl
                   ? <img src={currentUrl} className="w-full h-full object-cover object-top" alt="photo" />
@@ -201,10 +201,10 @@ function PhotoCropper({ currentUrl, onUploaded, userId }: { currentUrl: string; 
               </div>
               {currentUrl && (
                 <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1">
-                  <label className="cursor-pointer text-white text-xs font-semibold bg-white/20 hover:bg-white/30 px-2 py-1 rounded-lg">
+                  <button type="button" onClick={() => { setImgSrc(currentUrl); setZoom(1); setOffsetX(0); setOffsetY(0) }}
+                    className="cursor-pointer text-white text-xs font-semibold bg-white/20 hover:bg-white/30 px-2 py-1 rounded-lg">
                     ✏️ Modifier
-                    <input type="file" accept="image/*" className="hidden" onChange={onFileChange} />
-                  </label>
+                  </button>
                   <button type="button" onClick={async () => {
                     if (!confirm('Supprimer la photo ?')) return
                     await supabase.from('agents').update({ photo_url: null }).eq('id', userId)
