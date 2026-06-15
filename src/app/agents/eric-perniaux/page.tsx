@@ -48,6 +48,10 @@ export default function AgentPage() {
   const [poweredBy, setPoweredBy] = useState('Powered by SAFTI')
   const [bioFr, setBioFr] = useState('')
   const [bioTranslations, setBioTranslations] = useState<Record<string, string>>({})
+  const [photoUrl, setPhotoUrl] = useState(photoUrl)
+  const [agentName, setAgentName] = useState(agentName)
+  const [agentPhone, setAgentPhone] = useState(agentPhone)
+  const [agentWhatsapp, setAgentWhatsapp] = useState(agentWhatsapp)
   const [pendingBienId, setPendingBienId] = useState<string | null>(null)
 
   const [filters, setFilters] = useState({
@@ -79,14 +83,19 @@ export default function AgentPage() {
       .order('created_at', { ascending: false })
       .then(({ data }) => setProperties((data || []) as Property[]))
     supabase
-      .from('profiles')
-      .select('powered_by, bio, bio_translations')
-      .limit(1)
+      .from('agents')
+      .select('name, phone, whatsapp, photo_url, powered_by, bio, bio_translations')
+      .eq('email', 'macpinpin@me.com')
       .single()
       .then(({ data }) => {
-        if (data?.powered_by) setPoweredBy(data.powered_by)
-        if (data?.bio) setBioFr(data.bio)
-        if (data?.bio_translations) setBioTranslations(data.bio_translations)
+        if (!data) return
+        if (data.powered_by) setPoweredBy(data.powered_by)
+        if (data.bio) setBioFr(data.bio)
+        if (data.bio_translations) setBioTranslations(data.bio_translations)
+        if (data.photo_url) setPhotoUrl(data.photo_url)
+        if (data.name) setAgentName(data.name)
+        if (data.phone) setAgentPhone(data.phone)
+        if (data.whatsapp) setAgentWhatsapp(data.whatsapp)
       })
   }, [])
 
@@ -167,8 +176,8 @@ export default function AgentPage() {
           {/* Photo — absolute à gauche */}
           <div className="absolute top-1/2 -translate-y-1/2" style={{left: '80px'}}>
             <img
-              src={AGENT.photo}
-              alt={AGENT.name}
+              src={photoUrl}
+              alt={agentName}
               style={{height: '230px', width: '230px'}}
               className="rounded-full border-4 border-white object-cover object-top shadow-xl"
             />
@@ -178,7 +187,7 @@ export default function AgentPage() {
           <div className="w-full flex flex-col items-center justify-center py-6" style={{minHeight: '224px'}}>
             {/* Nom + réseau */}
             <div className="inline-flex flex-col items-end mb-2">
-              <h1 className="text-6xl font-bold tracking-tight">{AGENT.name}</h1>
+              <h1 className="text-6xl font-bold tracking-tight">{agentName}</h1>
               <p className="text-white/60 text-xs font-medium mt-0.5">{poweredBy}</p>
             </div>
 
@@ -189,10 +198,10 @@ export default function AgentPage() {
 
             {/* Boutons */}
             <div className="flex flex-wrap justify-center gap-2">
-              <a href={`tel:${AGENT.phone}`} className="bg-white text-orange-500 font-semibold px-4 py-2 rounded-xl text-sm hover:bg-orange-50 transition-colors flex items-center gap-1.5">
-                📞 {AGENT.phone}
+              <a href={`tel:${agentPhone}`} className="bg-white text-orange-500 font-semibold px-4 py-2 rounded-xl text-sm hover:bg-orange-50 transition-colors flex items-center gap-1.5">
+                📞 {agentPhone}
               </a>
-              <a href={`https://wa.me/${AGENT.whatsapp}`} target="_blank" rel="noopener" className="bg-green-500 text-white font-semibold px-4 py-2 rounded-xl text-sm hover:bg-green-600 transition-colors flex items-center gap-1.5">
+              <a href={`https://wa.me/${agentWhatsapp}`} target="_blank" rel="noopener" className="bg-green-500 text-white font-semibold px-4 py-2 rounded-xl text-sm hover:bg-green-600 transition-colors flex items-center gap-1.5">
                 💬 WhatsApp
               </a>
               <a href={`mailto:${AGENT.email}`} className="bg-white/15 hover:bg-white/25 border border-white/40 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors flex items-center gap-1.5">
@@ -211,19 +220,19 @@ export default function AgentPage() {
         {/* Layout mobile */}
         <div className="flex md:hidden flex-col items-center text-center px-6 py-8 gap-4">
           <img
-            src={AGENT.photo}
-            alt={AGENT.name}
+            src={photoUrl}
+            alt={agentName}
             className="w-32 h-32 rounded-full border-4 border-white object-cover object-top shadow-xl"
           />
           <div>
-            <h1 className="text-3xl font-bold mb-0.5">{AGENT.name}</h1>
+            <h1 className="text-3xl font-bold mb-0.5">{agentName}</h1>
             <p className="text-white/60 text-xs mb-3">{poweredBy}</p>
             <p className="text-white text-sm leading-relaxed mb-4 opacity-90 whitespace-pre-line">
               {bioTranslations[lang] || (lang === 'fr' ? bioFr : null) || bioFr || t('bio', lang)}
             </p>
             <div className="flex flex-wrap justify-center gap-2">
-              <a href={`tel:${AGENT.phone}`} className="bg-white text-orange-500 font-semibold px-4 py-2 rounded-xl text-sm">📞 {AGENT.phone}</a>
-              <a href={`https://wa.me/${AGENT.whatsapp}`} target="_blank" rel="noopener" className="bg-green-500 text-white font-semibold px-4 py-2 rounded-xl text-sm">💬 WhatsApp</a>
+              <a href={`tel:${agentPhone}`} className="bg-white text-orange-500 font-semibold px-4 py-2 rounded-xl text-sm">📞 {agentPhone}</a>
+              <a href={`https://wa.me/${agentWhatsapp}`} target="_blank" rel="noopener" className="bg-green-500 text-white font-semibold px-4 py-2 rounded-xl text-sm">💬 WhatsApp</a>
               <a href={`mailto:${AGENT.email}`} className="bg-white/15 border border-white/40 text-white font-semibold px-4 py-2 rounded-xl text-sm">✉️ Email</a>
               <button onClick={() => setValuationOpen(true)} className="bg-white/15 border border-white/40 text-white font-semibold px-4 py-2 rounded-xl text-sm">🏠 {t('valuation', lang)}</button>
             </div>
@@ -343,7 +352,7 @@ export default function AgentPage() {
           p={selected}
           lang={lang}
           fromDirectLink={fromDirectLink}
-          agent={{ email: AGENT.email, phone: AGENT.phone, whatsapp: AGENT.whatsapp, slug: 'eric-perniaux' }}
+          agent={{ email: AGENT.email, phone: agentPhone, whatsapp: agentWhatsapp, slug: 'eric-perniaux' }}
           onClose={() => { setSelected(null); setFromDirectLink(false); if (fromDirectLink) window.history.replaceState({}, '', window.location.pathname) }}
         />
       )}
