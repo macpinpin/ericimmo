@@ -41,10 +41,14 @@ export type Agent = {
   id: string
   email: string
   name: string
+  slug: string | null
   phone: string | null
+  whatsapp: string | null
   photo_url: string | null
   network: string | null
+  powered_by: string | null
   bio: string | null
+  bio_translations: Record<string, string> | null
   created_at: string
 }
 

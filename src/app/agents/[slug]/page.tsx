@@ -1,24 +1,14 @@
 'use client'
 
 import { useEffect, useState, useMemo } from 'react'
+import { useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import type { Property } from '@/lib/types'
+import type { Property, Agent } from '@/lib/types'
 import { PropertyCard, PropertyModal } from '@/components/PropertyCard'
 import { LANGS, t, type Lang } from '@/lib/translations'
-import ValuationModal from './ValuationModal'
 import { getDistricts, getConcelhos, getFreguesias } from '@/lib/portugal'
 
-const AGENT = {
-  name: 'Eric Perniaux',
-  phone: '+351 961 571 482',
-  whatsapp: '351961571482',
-  email: 'macpinpin@me.com',
-  photo: '/agent.jpg',
-  safti_url: 'https://www.safti.pt/consultor/eric-perniaux/33880427',
-}
-
 const FILTER_LABELS: Record<string, Record<string, string>> = {
-  search: { fr: 'Rechercher', pt: 'Pesquisar', en: 'Search', de: 'Suchen', nl: 'Zoeken', zh: '搜索' },
   district: { fr: 'District', pt: 'Distrito', en: 'District', de: 'Bezirk', nl: 'District', zh: '地区' },
   concelho: { fr: 'Concelho', pt: 'Concelho', en: 'Municipality', de: 'Gemeinde', nl: 'Gemeente', zh: '市镇' },
   freguesia: { fr: 'Freguesia', pt: 'Freguesia', en: 'Parish', de: 'Gemeindebezirk', nl: 'Parochie', zh: '教区' },
@@ -38,16 +28,17 @@ function fl(key: string, lang: string) {
   return FILTER_LABELS[key]?.[lang] || FILTER_LABELS[key]?.['fr'] || key
 }
 
-export default function AgentPage() {
+export default function AgentSlugPage() {
+  const params = useParams()
+  const slug = params?.slug as string
+
+  const [agent, setAgent] = useState<Agent | null>(null)
+  const [notFound, setNotFound] = useState(false)
   const [properties, setProperties] = useState<Property[]>([])
   const [selected, setSelected] = useState<Property | null>(null)
   const [fromDirectLink, setFromDirectLink] = useState(false)
   const [lang, setLang] = useState<Lang>('fr')
   const [langOpen, setLangOpen] = useState(false)
-  const [valuationOpen, setValuationOpen] = useState(false)
-  const [poweredBy, setPoweredBy] = useState('Powered by SAFTI')
-  const [bioFr, setBioFr] = useState('')
-  const [bioTranslations, setBioTranslations] = useState<Record<string, string>>({})
   const [pendingBienId, setPendingBienId] = useState<string | null>(null)
 
   const [filters, setFilters] = useState({
@@ -59,7 +50,29 @@ export default function AgentPage() {
     const params = new URLSearchParams(window.location.search)
     const bienId = params.get('bien')
     if (bienId) setPendingBienId(bienId)
+    const saved = localStorage.getItem('ep_lang') as Lang
+    if (saved) setLang(saved)
   }, [])
+
+  useEffect(() => {
+    if (!slug) return
+    supabase
+      .from('agents')
+      .select('*')
+      .eq('slug', slug)
+      .single()
+      .then(({ data, error }) => {
+        if (error || !data) { setNotFound(true); return }
+        setAgent(data as Agent)
+        supabase
+          .from('properties')
+          .select('*')
+          .eq('agent_id', data.id)
+          .eq('status', 'active')
+          .order('created_at', { ascending: false })
+          .then(({ data: props }) => setProperties((props || []) as Property[]))
+      })
+  }, [slug])
 
   useEffect(() => {
     if (pendingBienId && properties.length > 0) {
@@ -68,27 +81,6 @@ export default function AgentPage() {
       setPendingBienId(null)
     }
   }, [pendingBienId, properties])
-
-  useEffect(() => {
-    const saved = localStorage.getItem('ep_lang') as Lang
-    if (saved) setLang(saved)
-    supabase
-      .from('properties')
-      .select('*')
-      .eq('status', 'active')
-      .order('created_at', { ascending: false })
-      .then(({ data }) => setProperties((data || []) as Property[]))
-    supabase
-      .from('profiles')
-      .select('powered_by, bio, bio_translations')
-      .limit(1)
-      .single()
-      .then(({ data }) => {
-        if (data?.powered_by) setPoweredBy(data.powered_by)
-        if (data?.bio) setBioFr(data.bio)
-        if (data?.bio_translations) setBioTranslations(data.bio_translations)
-      })
-  }, [])
 
   function switchLang(code: string) {
     setLang(code as Lang)
@@ -104,7 +96,6 @@ export default function AgentPage() {
     setFilters({ district: '', concelho: '', freguesia: '', type: '', bedrooms: '', minArea: '', maxArea: '', minPrice: '', maxPrice: '' })
   }
 
-  // Options depuis la base de données Portugal complète
   const districts = useMemo(() => getDistricts(), [])
   const concelhos = useMemo(() => getConcelhos(filters.district), [filters.district])
   const freguesias = useMemo(() => getFreguesias(filters.district, filters.concelho), [filters.district, filters.concelho])
@@ -131,6 +122,39 @@ export default function AgentPage() {
   const hasFilters = Object.values(filters).some(v => v !== '')
   const currentLang = LANGS.find(l => l.code === lang) || LANGS[0]
   const inp = "w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange-400 transition-colors bg-white"
+
+  if (notFound) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-white">
+        <div className="text-center">
+          <p className="text-6xl mb-4">🔍</p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Agent introuvable</h1>
+          <p className="text-gray-500">Aucun agent ne correspond à cette adresse.</p>
+        </div>
+      </main>
+    )
+  }
+
+  if (!agent) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-white">
+        <div className="text-center text-gray-400">
+          <div className="w-8 h-8 border-2 border-orange-400 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-sm">Chargement...</p>
+        </div>
+      </main>
+    )
+  }
+
+  const agentContact = {
+    email: agent.email,
+    phone: agent.phone || '',
+    whatsapp: agent.whatsapp || '',
+    slug: agent.slug || slug,
+  }
+
+  const bio = agent.bio_translations?.[lang] || agent.bio || ''
+  const poweredBy = agent.powered_by || 'Powered by SAFTI'
 
   return (
     <main className="min-h-screen bg-white" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
@@ -164,68 +188,55 @@ export default function AgentPage() {
 
         {/* Layout desktop */}
         <div className="hidden md:block relative" style={{minHeight: '224px'}}>
-          {/* Photo — absolute à gauche */}
-          <div className="absolute top-1/2 -translate-y-1/2" style={{left: '80px'}}>
-            <img
-              src={AGENT.photo}
-              alt={AGENT.name}
-              style={{height: '230px', width: '230px'}}
-              className="rounded-full border-4 border-white object-cover object-top shadow-xl"
-            />
-          </div>
-
-          {/* Contenu centré sur toute la largeur du bandeau */}
+          {agent.photo_url && (
+            <div className="absolute top-1/2 -translate-y-1/2" style={{left: '80px'}}>
+              <img
+                src={agent.photo_url}
+                alt={agent.name}
+                style={{height: '230px', width: '230px'}}
+                className="rounded-full border-4 border-white object-cover object-top shadow-xl"
+              />
+            </div>
+          )}
           <div className="w-full flex flex-col items-center justify-center py-6" style={{minHeight: '224px'}}>
-            {/* Nom + réseau */}
             <div className="inline-flex flex-col items-end mb-2">
-              <h1 className="text-6xl font-bold tracking-tight">{AGENT.name}</h1>
+              <h1 className="text-6xl font-bold tracking-tight">{agent.name}</h1>
               <p className="text-white/60 text-xs font-medium mt-0.5">{poweredBy}</p>
             </div>
-
-            {/* Bio */}
-            <p className="text-white text-base leading-relaxed mb-10 mt-6 text-center max-w-lg whitespace-pre-line">
-              {bioTranslations[lang] || (lang === 'fr' ? bioFr : null) || bioFr || t('bio', lang)}
-            </p>
-
-            {/* Boutons */}
+            {bio && (
+              <p className="text-white text-base leading-relaxed mb-10 mt-6 text-center max-w-lg whitespace-pre-line">{bio}</p>
+            )}
             <div className="flex flex-wrap justify-center gap-2">
-              <a href={`tel:${AGENT.phone}`} className="bg-white text-orange-500 font-semibold px-4 py-2 rounded-xl text-sm hover:bg-orange-50 transition-colors flex items-center gap-1.5">
-                📞 {AGENT.phone}
-              </a>
-              <a href={`https://wa.me/${AGENT.whatsapp}`} target="_blank" rel="noopener" className="bg-green-500 text-white font-semibold px-4 py-2 rounded-xl text-sm hover:bg-green-600 transition-colors flex items-center gap-1.5">
-                💬 WhatsApp
-              </a>
-              <a href={`mailto:${AGENT.email}`} className="bg-white/15 hover:bg-white/25 border border-white/40 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors flex items-center gap-1.5">
+              {agent.phone && (
+                <a href={`tel:${agent.phone}`} className="bg-white text-orange-500 font-semibold px-4 py-2 rounded-xl text-sm hover:bg-orange-50 transition-colors flex items-center gap-1.5">
+                  📞 {agent.phone}
+                </a>
+              )}
+              {agent.whatsapp && (
+                <a href={`https://wa.me/${agent.whatsapp}`} target="_blank" rel="noopener" className="bg-green-500 text-white font-semibold px-4 py-2 rounded-xl text-sm hover:bg-green-600 transition-colors flex items-center gap-1.5">
+                  💬 WhatsApp
+                </a>
+              )}
+              <a href={`mailto:${agent.email}`} className="bg-white/15 hover:bg-white/25 border border-white/40 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors flex items-center gap-1.5">
                 ✉️ Email
               </a>
-              <button
-                onClick={() => setValuationOpen(true)}
-                className="bg-white/15 hover:bg-white/25 border border-white/40 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors flex items-center gap-1.5"
-              >
-                🏠 {t('valuation', lang)}
-              </button>
             </div>
           </div>
         </div>
 
         {/* Layout mobile */}
         <div className="flex md:hidden flex-col items-center text-center px-6 py-8 gap-4">
-          <img
-            src={AGENT.photo}
-            alt={AGENT.name}
-            className="w-32 h-32 rounded-full border-4 border-white object-cover object-top shadow-xl"
-          />
+          {agent.photo_url && (
+            <img src={agent.photo_url} alt={agent.name} className="w-32 h-32 rounded-full border-4 border-white object-cover object-top shadow-xl" />
+          )}
           <div>
-            <h1 className="text-3xl font-bold mb-0.5">{AGENT.name}</h1>
+            <h1 className="text-3xl font-bold mb-0.5">{agent.name}</h1>
             <p className="text-white/60 text-xs mb-3">{poweredBy}</p>
-            <p className="text-white text-sm leading-relaxed mb-4 opacity-90 whitespace-pre-line">
-              {bioTranslations[lang] || (lang === 'fr' ? bioFr : null) || bioFr || t('bio', lang)}
-            </p>
+            {bio && <p className="text-white text-sm leading-relaxed mb-4 opacity-90 whitespace-pre-line">{bio}</p>}
             <div className="flex flex-wrap justify-center gap-2">
-              <a href={`tel:${AGENT.phone}`} className="bg-white text-orange-500 font-semibold px-4 py-2 rounded-xl text-sm">📞 {AGENT.phone}</a>
-              <a href={`https://wa.me/${AGENT.whatsapp}`} target="_blank" rel="noopener" className="bg-green-500 text-white font-semibold px-4 py-2 rounded-xl text-sm">💬 WhatsApp</a>
-              <a href={`mailto:${AGENT.email}`} className="bg-white/15 border border-white/40 text-white font-semibold px-4 py-2 rounded-xl text-sm">✉️ Email</a>
-              <button onClick={() => setValuationOpen(true)} className="bg-white/15 border border-white/40 text-white font-semibold px-4 py-2 rounded-xl text-sm">🏠 {t('valuation', lang)}</button>
+              {agent.phone && <a href={`tel:${agent.phone}`} className="bg-white text-orange-500 font-semibold px-4 py-2 rounded-xl text-sm">📞 {agent.phone}</a>}
+              {agent.whatsapp && <a href={`https://wa.me/${agent.whatsapp}`} target="_blank" rel="noopener" className="bg-green-500 text-white font-semibold px-4 py-2 rounded-xl text-sm">💬 WhatsApp</a>}
+              <a href={`mailto:${agent.email}`} className="bg-white/15 border border-white/40 text-white font-semibold px-4 py-2 rounded-xl text-sm">✉️ Email</a>
             </div>
           </div>
         </div>
@@ -235,7 +246,6 @@ export default function AgentPage() {
       {/* Filtres */}
       <div className="bg-gray-50 border-b border-gray-100 px-6 py-5">
         <div className="max-w-5xl mx-auto">
-          {/* Ligne 1 : Localisation + Type */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
             <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">{fl('district', lang)}</label>
@@ -271,7 +281,6 @@ export default function AgentPage() {
             </div>
           </div>
 
-          {/* Ligne 2 : Chambres + Surfaces + Prix + Reset */}
           <div className="flex flex-wrap gap-3 items-end">
             <div className="flex-1 min-w-[120px]">
               <label className="block text-xs font-medium text-gray-500 mb-1">{fl('bedrooms', lang)}</label>
@@ -313,9 +322,6 @@ export default function AgentPage() {
           <h2 className="text-2xl font-bold text-gray-900">
             {t('myProperties', lang)} <span className="text-orange-500">({filtered.length}{hasFilters ? `/${properties.length}` : ''})</span>
           </h2>
-          <a href={AGENT.safti_url} target="_blank" rel="noopener" className="text-sm text-orange-500 hover:underline font-medium">
-            {t('seeOnSafti', lang)}
-          </a>
         </div>
 
         {filtered.length === 0 ? (
@@ -337,19 +343,19 @@ export default function AgentPage() {
         )}
       </div>
 
-      {/* Modal property */}
       {selected && (
         <PropertyModal
           p={selected}
           lang={lang}
           fromDirectLink={fromDirectLink}
-          agent={{ email: AGENT.email, phone: AGENT.phone, whatsapp: AGENT.whatsapp, slug: 'eric-perniaux' }}
-          onClose={() => { setSelected(null); setFromDirectLink(false); if (fromDirectLink) window.history.replaceState({}, '', window.location.pathname) }}
+          agent={agentContact}
+          onClose={() => {
+            setSelected(null)
+            setFromDirectLink(false)
+            if (fromDirectLink) window.history.replaceState({}, '', window.location.pathname)
+          }}
         />
       )}
-
-      {/* Modal évaluation */}
-      {valuationOpen && <ValuationModal lang={lang} onClose={() => setValuationOpen(false)} />}
     </main>
   )
 }

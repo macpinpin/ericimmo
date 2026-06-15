@@ -48,12 +48,18 @@ export default function RegisterPage() {
       return
     }
 
-    // Insert agent profile
+    // Insert agent profile with auto-generated slug
     if (data.user) {
+      const slug = form.name
+        .toLowerCase()
+        .normalize('NFD').replace(/[̀-ͯ]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '')
       await supabase.from('agents').upsert({
         id: data.user.id,
         email: form.email,
         name: form.name,
+        slug,
       })
     }
 

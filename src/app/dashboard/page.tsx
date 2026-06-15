@@ -77,6 +77,95 @@ function InviteTab() {
   )
 }
 
+function ProfileTab({ userId }: { userId: string }) {
+  const [form, setForm] = useState({ name: '', phone: '', whatsapp: '', bio: '', powered_by: '', slug: '' })
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  useEffect(() => {
+    supabase.from('agents').select('name,phone,whatsapp,bio,powered_by,slug').eq('id', userId).single()
+      .then(({ data }) => {
+        if (data) setForm({
+          name: data.name || '',
+          phone: data.phone || '',
+          whatsapp: data.whatsapp || '',
+          bio: data.bio || '',
+          powered_by: data.powered_by || 'Powered by SAFTI',
+          slug: data.slug || '',
+        })
+        setLoading(false)
+      })
+  }, [userId])
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault()
+    setSaving(true)
+    await supabase.from('agents').update({
+      name: form.name,
+      phone: form.phone,
+      whatsapp: form.whatsapp,
+      bio: form.bio,
+      powered_by: form.powered_by,
+      slug: form.slug,
+    }).eq('id', userId)
+    setSaving(false)
+    setSaved(true)
+    setTimeout(() => setSaved(false), 3000)
+  }
+
+  const inp = "w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-orange-400 transition-colors"
+
+  if (loading) return <p className="text-gray-400 text-sm">Chargement...</p>
+
+  return (
+    <div className="max-w-lg">
+      <h2 className="text-lg font-semibold text-gray-900 mb-6">Mon profil public</h2>
+      <div className="bg-white rounded-2xl border border-gray-100 p-6">
+        <form onSubmit={handleSave} className="flex flex-col gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Nom complet</label>
+            <input className={inp} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Slug (URL de votre minisite)</label>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-400">/agents/</span>
+              <input className={inp} value={form.slug} onChange={e => setForm(f => ({ ...f, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-') }))} placeholder="prenom-nom" />
+            </div>
+            {form.slug && <p className="text-xs text-gray-400 mt-1">→ /agents/{form.slug}</p>}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Téléphone</label>
+            <input className={inp} value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="+351 961 000 000" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp (sans +, ex: 351961000000)</label>
+            <input className={inp} value={form.whatsapp} onChange={e => setForm(f => ({ ...f, whatsapp: e.target.value }))} placeholder="351961000000" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Réseau / Enseigne</label>
+            <input className={inp} value={form.powered_by} onChange={e => setForm(f => ({ ...f, powered_by: e.target.value }))} placeholder="Powered by SAFTI" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Bio (texte affiché sur votre minisite)</label>
+            <textarea className={inp} rows={4} value={form.bio} onChange={e => setForm(f => ({ ...f, bio: e.target.value }))} placeholder="Spécialiste de l'immobilier en Algarve..." />
+          </div>
+          <button type="submit" disabled={saving}
+            className="bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition-colors">
+            {saving ? 'Enregistrement…' : saved ? '✅ Enregistré !' : 'Enregistrer'}
+          </button>
+        </form>
+      </div>
+      {form.slug && (
+        <a href={`/agents/${form.slug}`} target="_blank" className="mt-4 text-sm text-orange-500 hover:underline font-medium flex items-center gap-1">
+          Voir mon minisite → /agents/{form.slug}
+        </a>
+      )}
+    </div>
+  )
+}
+
 function ScoreBar({ score }: { score: number }) {
   const color = score >= 80 ? 'bg-green-400' : score >= 60 ? 'bg-orange-400' : 'bg-gray-300'
   return (
@@ -93,7 +182,8 @@ export default function DashboardPage() {
   const router = useRouter()
   const [user, setUser] = useState<{ id: string; email: string } | null>(null)
   const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState<'properties' | 'buyers' | 'matches' | 'invite'>('properties')
+  const [tab, setTab] = useState<'properties' | 'buyers' | 'matches' | 'invite' | 'profile'>('properties')
+  const [agentSlug, setAgentSlug] = useState<string | null>(null)
   const isAdmin = user?.email === 'macpinpin@me.com'
 
   const [properties, setProperties] = useState<Property[]>([])
@@ -116,6 +206,9 @@ export default function DashboardPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/login'); return }
     setUser({ id: user.id, email: user.email! })
+    supabase.from('agents').select('slug').eq('id', user.id).single().then(({ data }) => {
+      if (data?.slug) setAgentSlug(data.slug)
+    })
     await Promise.all([loadProperties(user.id), loadBuyers(user.id), loadMatches(user.id)])
     setLoading(false)
   }
@@ -216,7 +309,7 @@ export default function DashboardPage() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <a href="/agents/eric-perniaux" target="_blank" className="text-sm text-orange-500 hover:underline font-medium">Voir ma page →</a>
+          {agentSlug && <a href={`/agents/${agentSlug}`} target="_blank" className="text-sm text-orange-500 hover:underline font-medium">Voir ma page →</a>}
           <a href="/dashboard/settings" className="text-sm text-gray-400 hover:text-gray-600">⚙️ Paramètres</a>
           <button onClick={handleLogout} className="text-sm text-gray-400 hover:text-gray-600">Déconnexion</button>
         </div>
@@ -267,6 +360,10 @@ export default function DashboardPage() {
               ✉️ Invitations
             </button>
           )}
+          <button onClick={() => setTab('profile')}
+            className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'profile' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+            👤 Profil
+          </button>
         </div>
         <button onClick={triggerMatching} disabled={running}
           className="text-sm bg-orange-50 text-orange-500 border border-orange-200 hover:bg-orange-100 disabled:opacity-50 font-semibold px-4 py-2 rounded-xl transition-colors">
@@ -522,7 +619,18 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Onglet Invitations (admin only) ── */}
-      {tab === 'invite' && isAdmin && <InviteTab />}
+      {tab === 'invite' && isAdmin && (
+        <div className="max-w-5xl mx-auto px-6 py-8">
+          <InviteTab />
+        </div>
+      )}
+
+      {/* ── Onglet Profil ── */}
+      {tab === 'profile' && user && (
+        <div className="max-w-5xl mx-auto px-6 py-8">
+          <ProfileTab userId={user.id} />
+        </div>
+      )}
 
       {showPropertyForm && (
         <PropertyForm agentId={user!.id} property={editProp} onSaved={handlePropertySaved} onClose={() => { setShowPropertyForm(false); setEditProp(null) }} />
