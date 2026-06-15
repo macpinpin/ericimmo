@@ -147,7 +147,7 @@ export default function AgentSlugPage() {
   }
 
   const agentContact = {
-    email: agent.email,
+    email: agent.contact_email || agent.email,
     phone: agent.phone || '',
     whatsapp: agent.whatsapp || '',
     slug: agent.slug || slug,
@@ -217,7 +217,7 @@ export default function AgentSlugPage() {
                   💬 WhatsApp
                 </a>
               )}
-              <a href={`mailto:${agent.email}`} className="bg-white/15 hover:bg-white/25 border border-white/40 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors flex items-center gap-1.5">
+              <a href={`mailto:${agent.contact_email || agent.email}`} className="bg-white/15 hover:bg-white/25 border border-white/40 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors flex items-center gap-1.5">
                 ✉️ Email
               </a>
             </div>
@@ -236,7 +236,7 @@ export default function AgentSlugPage() {
             <div className="flex flex-wrap justify-center gap-2">
               {agent.phone && <a href={`tel:${agent.phone}`} className="bg-white text-orange-500 font-semibold px-4 py-2 rounded-xl text-sm">📞 {agent.phone}</a>}
               {agent.whatsapp && <a href={`https://wa.me/${agent.whatsapp}`} target="_blank" rel="noopener" className="bg-green-500 text-white font-semibold px-4 py-2 rounded-xl text-sm">💬 WhatsApp</a>}
-              <a href={`mailto:${agent.email}`} className="bg-white/15 border border-white/40 text-white font-semibold px-4 py-2 rounded-xl text-sm">✉️ Email</a>
+              <a href={`mailto:${agent.contact_email || agent.email}`} className="bg-white/15 border border-white/40 text-white font-semibold px-4 py-2 rounded-xl text-sm">✉️ Email</a>
             </div>
           </div>
         </div>

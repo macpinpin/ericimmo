@@ -283,14 +283,14 @@ function PhotoCropper({ currentUrl, onUploaded, userId }: { currentUrl: string; 
 }
 
 function ProfileTab({ userId }: { userId: string }) {
-  const [form, setForm] = useState({ name: '', phone: '', whatsapp: '', bio: '', powered_by: '', slug: '' })
+  const [form, setForm] = useState({ name: '', phone: '', whatsapp: '', bio: '', powered_by: '', slug: '', contact_email: '' })
   const [photoUrl, setPhotoUrl] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
   useEffect(() => {
-    supabase.from('agents').select('name,phone,whatsapp,bio,powered_by,slug,photo_url').eq('id', userId).single()
+    supabase.from('agents').select('name,phone,whatsapp,bio,powered_by,slug,photo_url,contact_email,email').eq('id', userId).single()
       .then(({ data }) => {
         if (data) {
           setForm({
@@ -300,6 +300,7 @@ function ProfileTab({ userId }: { userId: string }) {
             bio: data.bio || '',
             powered_by: data.powered_by || 'Powered by SAFTI',
             slug: data.slug || '',
+            contact_email: data.contact_email || data.email || '',
           })
           setPhotoUrl(data.photo_url || '')
         }
@@ -322,6 +323,7 @@ function ProfileTab({ userId }: { userId: string }) {
       bio: form.bio,
       powered_by: form.powered_by,
       slug: form.slug,
+      contact_email: form.contact_email || null,
     }).eq('id', userId)
     setSaving(false)
     setSaved(true)
@@ -359,6 +361,10 @@ function ProfileTab({ userId }: { userId: string }) {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp (sans +, ex: 351961000000)</label>
             <input className={inp} value={form.whatsapp} onChange={e => setForm(f => ({ ...f, whatsapp: e.target.value }))} placeholder="351961000000" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email de contact (reçoit les leads)</label>
+            <input className={inp} type="email" value={form.contact_email} onChange={e => setForm(f => ({ ...f, contact_email: e.target.value }))} placeholder="votre@email.com" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Réseau / Enseigne</label>

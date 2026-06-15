@@ -58,6 +58,7 @@ export default function RegisterPage() {
       await supabase.from('agents').upsert({
         id: data.user.id,
         email: form.email,
+        contact_email: form.email,
         name: form.name,
         slug,
       })

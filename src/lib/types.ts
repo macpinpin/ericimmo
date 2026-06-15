@@ -40,6 +40,7 @@ export type Buyer = {
 export type Agent = {
   id: string
   email: string
+  contact_email: string | null
   name: string
   slug: string | null
   phone: string | null
