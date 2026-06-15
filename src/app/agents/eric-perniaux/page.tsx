@@ -48,10 +48,10 @@ export default function AgentPage() {
   const [poweredBy, setPoweredBy] = useState('Powered by SAFTI')
   const [bioFr, setBioFr] = useState('')
   const [bioTranslations, setBioTranslations] = useState<Record<string, string>>({})
-  const [photoUrl, setPhotoUrl] = useState(photoUrl)
-  const [agentName, setAgentName] = useState(agentName)
-  const [agentPhone, setAgentPhone] = useState(agentPhone)
-  const [agentWhatsapp, setAgentWhatsapp] = useState(agentWhatsapp)
+  const [photoUrl, setPhotoUrl] = useState<string>(AGENT.photo)
+  const [agentName, setAgentName] = useState<string>(AGENT.name)
+  const [agentPhone, setAgentPhone] = useState<string>(AGENT.phone)
+  const [agentWhatsapp, setAgentWhatsapp] = useState<string>(AGENT.whatsapp)
   const [pendingBienId, setPendingBienId] = useState<string | null>(null)
 
   const [filters, setFilters] = useState({
