@@ -85,19 +85,30 @@ function PhotoCropper({ currentUrl, onUploaded, userId }: { currentUrl: string; 
   const [dragging, setDragging] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
   const [uploading, setUploading] = useState(false)
+  const [dropOver, setDropOver] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const imgRef = useRef<HTMLImageElement | null>(null)
   const SIZE = 200
 
-  function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
+  function loadFile(file: File) {
     const reader = new FileReader()
     reader.onload = ev => {
       setImgSrc(ev.target?.result as string)
       setZoom(1); setOffsetX(0); setOffsetY(0)
     }
     reader.readAsDataURL(file)
+  }
+
+  function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (file) loadFile(file)
+  }
+
+  function onDrop(e: React.DragEvent) {
+    e.preventDefault()
+    setDropOver(false)
+    const file = e.dataTransfer.files?.[0]
+    if (file && file.type.startsWith('image/')) loadFile(file)
   }
 
   function drawCanvas(src: string, z: number, ox: number, oy: number) {
@@ -113,9 +124,8 @@ function PhotoCropper({ currentUrl, onUploaded, userId }: { currentUrl: string; 
       ctx.beginPath()
       ctx.arc(SIZE / 2, SIZE / 2, SIZE / 2, 0, Math.PI * 2)
       ctx.clip()
-      const scale = z
-      const iw = img.naturalWidth * scale
-      const ih = img.naturalHeight * scale
+      const iw = img.naturalWidth * z
+      const ih = img.naturalHeight * z
       const x = (SIZE - iw) / 2 + ox
       const y = (SIZE - ih) / 2 + oy
       ctx.drawImage(img, x, y, iw, ih)
@@ -158,9 +168,8 @@ function PhotoCropper({ currentUrl, onUploaded, userId }: { currentUrl: string; 
 
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">Photo de profil</label>
+      <label className="block text-sm font-medium text-gray-700 mb-3">Photo de profil</label>
       <div className="flex items-start gap-6">
-        {/* Aperçu actuel ou canvas */}
         <div className="flex-shrink-0">
           {imgSrc ? (
             <div>
@@ -178,7 +187,7 @@ function PhotoCropper({ currentUrl, onUploaded, userId }: { currentUrl: string; 
                 <input type="range" min={0.5} max={3} step={0.05} value={zoom}
                   onChange={e => setZoom(parseFloat(e.target.value))}
                   className="w-full accent-orange-500" />
-                <p className="text-xs text-gray-400 text-center">Zoom — glisse pour repositionner</p>
+                <p className="text-xs text-gray-400 text-center mt-1">🔍 Zoom · glisse pour cadrer</p>
               </div>
             </div>
           ) : (
@@ -190,12 +199,23 @@ function PhotoCropper({ currentUrl, onUploaded, userId }: { currentUrl: string; 
           )}
         </div>
 
-        {/* Contrôles */}
-        <div className="flex flex-col gap-2 justify-center">
-          <label className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-sm px-4 py-2 rounded-xl transition-colors">
-            📁 Choisir une photo
-            <input type="file" accept="image/*" className="hidden" onChange={onFileChange} />
-          </label>
+        <div className="flex flex-col gap-3 flex-1">
+          {/* Zone drop */}
+          <div
+            onDrop={onDrop}
+            onDragOver={e => { e.preventDefault(); setDropOver(true) }}
+            onDragLeave={() => setDropOver(false)}
+            className={`border-2 border-dashed rounded-xl p-5 text-center transition-colors ${dropOver ? 'border-orange-400 bg-orange-50' : 'border-gray-200 bg-gray-50'}`}
+          >
+            <p className="text-2xl mb-1">🖼️</p>
+            <p className="text-sm text-gray-500 font-medium">Glisse ta photo ici</p>
+            <p className="text-xs text-gray-400 mt-1">ou</p>
+            <label className="mt-2 inline-block cursor-pointer bg-white border border-gray-200 hover:bg-gray-100 text-gray-700 font-medium text-sm px-4 py-2 rounded-xl transition-colors">
+              📁 Choisir un fichier
+              <input type="file" accept="image/*" className="hidden" onChange={onFileChange} />
+            </label>
+          </div>
+
           {imgSrc && (
             <button type="button" onClick={handleUpload} disabled={uploading}
               className="bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-semibold text-sm px-4 py-2 rounded-xl transition-colors">
