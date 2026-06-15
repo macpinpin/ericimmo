@@ -124,7 +124,7 @@ function PhotoCropper({ currentUrl, onUploaded, userId }: { currentUrl: string; 
       ctx.beginPath()
       ctx.arc(SIZE / 2, SIZE / 2, SIZE / 2, 0, Math.PI * 2)
       ctx.clip()
-      ctx.fillStyle = '#ffffff'
+      ctx.fillStyle = '#f97316'
       ctx.fillRect(0, 0, SIZE, SIZE)
       const iw = img.naturalWidth * z
       const ih = img.naturalHeight * z
@@ -158,14 +158,14 @@ function PhotoCropper({ currentUrl, onUploaded, userId }: { currentUrl: string; 
     setUploading(true)
     canvas.toBlob(async blob => {
       if (!blob) { setUploading(false); return }
-      const path = `agents/${userId}/photo.jpg`
-      const { error } = await supabase.storage.from('agent-photos').upload(path, blob, { upsert: true, contentType: 'image/jpeg' })
+      const path = `agents/${userId}/photo.png`
+      const { error } = await supabase.storage.from('agent-photos').upload(path, blob, { upsert: true, contentType: 'image/png' })
       if (error) { alert('Erreur upload : ' + error.message); setUploading(false); return }
       const { data } = supabase.storage.from('agent-photos').getPublicUrl(path)
       onUploaded(data.publicUrl + '?t=' + Date.now())
       setImgSrc(null)
       setUploading(false)
-    }, 'image/jpeg', 0.92)
+    }, 'image/png')
   }
 
   return (

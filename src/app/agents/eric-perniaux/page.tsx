@@ -179,7 +179,7 @@ export default function AgentPage() {
               src={photoUrl}
               alt={agentName}
               style={{height: '230px', width: '230px'}}
-              className="rounded-full border-4 border-white object-cover object-top shadow-xl"
+              className="rounded-full object-cover object-top shadow-xl"
             />
           </div>
 
