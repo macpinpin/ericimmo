@@ -10,17 +10,20 @@ import { getDistricts, getConcelhos, getFreguesias } from '@/lib/portugal'
 type AgentContact = { email: string; phone: string; whatsapp: string; slug: string }
 
 const FILTER_LABELS: Record<string, Record<string, string>> = {
-  district: { fr: 'District', pt: 'Distrito', en: 'District', de: 'Bezirk', nl: 'District', zh: '地区' },
-  concelho: { fr: 'Concelho', pt: 'Concelho', en: 'Municipality', de: 'Gemeinde', nl: 'Gemeente', zh: '市镇' },
-  type: { fr: 'Type de bien', pt: 'Tipo de imóvel', en: 'Property type', de: 'Immobilientyp', nl: 'Type woning', zh: '房产类型' },
-  bedrooms: { fr: 'Chambres min.', pt: 'Quartos mín.', en: 'Min. bedrooms', de: 'Mind. Zimmer', nl: 'Min. slaapk.', zh: '最少卧室' },
-  minPrice: { fr: 'Prix min. (€)', pt: 'Preço mín. (€)', en: 'Min. price (€)', de: 'Min. Preis (€)', nl: 'Min. prijs (€)', zh: '最低价格 (€)' },
-  maxPrice: { fr: 'Prix max. (€)', pt: 'Preço máx. (€)', en: 'Max. price (€)', de: 'Max. Preis (€)', nl: 'Max. prijs (€)', zh: '最高价格 (€)' },
-  reset: { fr: 'Réinitialiser', pt: 'Reiniciar', en: 'Reset', de: 'Zurücksetzen', nl: 'Resetten', zh: '重置' },
-  allTypes: { fr: 'Tous les types', pt: 'Todos os tipos', en: 'All types', de: 'Alle Typen', nl: 'Alle types', zh: '所有类型' },
-  allBeds: { fr: 'Peu importe', pt: 'Qualquer', en: 'Any', de: 'Egal', nl: 'Maakt niet uit', zh: '不限' },
-  noResult: { fr: 'Aucun bien ne correspond à vos critères.', pt: 'Nenhum imóvel corresponde.', en: 'No properties match.', de: 'Keine Treffer.', nl: 'Geen resultaten.', zh: '无匹配房产。' },
-  properties: { fr: 'biens disponibles', pt: 'imóveis disponíveis', en: 'properties available', de: 'Immobilien verfügbar', nl: 'woningen beschikbaar', zh: '套房产' },
+  district:  { fr: 'Région',        pt: 'Distrito',      en: 'District',       de: 'Bezirk',        nl: 'District',   zh: '地区' },
+  concelho:  { fr: 'Commune',       pt: 'Concelho',      en: 'Municipality',   de: 'Gemeinde',      nl: 'Gemeente',   zh: '市镇' },
+  freguesia: { fr: 'Quartier',      pt: 'Freguesia',     en: 'Parish',         de: 'Gemeindebezirk',nl: 'Parochie',   zh: '教区' },
+  type:      { fr: 'Type de bien',  pt: 'Tipo de imóvel',en: 'Property type',  de: 'Immobilientyp', nl: 'Type woning',zh: '房产类型' },
+  bedrooms:  { fr: 'Chambres min.', pt: 'Quartos mín.',  en: 'Min. bedrooms',  de: 'Mind. Zimmer',  nl: 'Min. slaapk.',zh: '最少卧室' },
+  minArea:   { fr: 'Surface min. (m²)', pt: 'Área mín. (m²)', en: 'Min. area (m²)', de: 'Mind. Fläche (m²)', nl: 'Min. opp. (m²)', zh: '最小面积 (m²)' },
+  maxArea:   { fr: 'Surface max. (m²)', pt: 'Área máx. (m²)', en: 'Max. area (m²)', de: 'Max. Fläche (m²)', nl: 'Max. opp. (m²)', zh: '最大面积 (m²)' },
+  minPrice:  { fr: 'Prix min. (€)', pt: 'Preço mín. (€)',en: 'Min. price (€)', de: 'Min. Preis (€)', nl: 'Min. prijs (€)', zh: '最低价格 (€)' },
+  maxPrice:  { fr: 'Prix max. (€)', pt: 'Preço máx. (€)',en: 'Max. price (€)', de: 'Max. Preis (€)', nl: 'Max. prijs (€)', zh: '最高价格 (€)' },
+  reset:     { fr: 'Réinitialiser', pt: 'Reiniciar',     en: 'Reset',          de: 'Zurücksetzen',  nl: 'Resetten',   zh: '重置' },
+  allTypes:  { fr: 'Tous les types',pt: 'Todos os tipos',en: 'All types',      de: 'Alle Typen',    nl: 'Alle types', zh: '所有类型' },
+  allBeds:   { fr: 'Peu importe',   pt: 'Qualquer',      en: 'Any',            de: 'Egal',          nl: 'Maakt niet uit', zh: '不限' },
+  noResult:  { fr: 'Aucun bien ne correspond à vos critères.', pt: 'Nenhum imóvel corresponde.', en: 'No properties match.', de: 'Keine Treffer.', nl: 'Geen resultaten.', zh: '无匹配房产。' },
+  properties:{ fr: 'biens disponibles', pt: 'imóveis disponíveis', en: 'properties available', de: 'Immobilien verfügbar', nl: 'woningen beschikbaar', zh: '套房产' },
 }
 
 function fl(key: string, lang: string) {
@@ -37,7 +40,7 @@ export default function BiensPage() {
 
   const [filters, setFilters] = useState({
     district: '', concelho: '', freguesia: '',
-    type: '', bedrooms: '', minPrice: '', maxPrice: '',
+    type: '', bedrooms: '', minArea: '', maxArea: '', minPrice: '', maxPrice: '',
   })
 
   useEffect(() => {
@@ -67,7 +70,7 @@ export default function BiensPage() {
   }
 
   function resetFilters() {
-    setFilters({ district: '', concelho: '', freguesia: '', type: '', bedrooms: '', minPrice: '', maxPrice: '' })
+    setFilters({ district: '', concelho: '', freguesia: '', type: '', bedrooms: '', minArea: '', maxArea: '', minPrice: '', maxPrice: '' })
   }
 
   const districts = useMemo(() => getDistricts(), [])
@@ -81,6 +84,14 @@ export default function BiensPage() {
     if (filters.freguesia && p.freguesia !== filters.freguesia) return false
     if (filters.type && p.type !== filters.type) return false
     if (filters.bedrooms && (p.bedrooms || 0) < parseInt(filters.bedrooms)) return false
+    if (filters.minArea) {
+      const area = p.area_bruta_privativa || p.area_utile || 0
+      if (area < parseFloat(filters.minArea)) return false
+    }
+    if (filters.maxArea) {
+      const area = p.area_bruta_privativa || p.area_utile || 0
+      if (area > parseFloat(filters.maxArea)) return false
+    }
     if (filters.minPrice && p.price < parseFloat(filters.minPrice)) return false
     if (filters.maxPrice && p.price > parseFloat(filters.maxPrice)) return false
     return true
@@ -164,6 +175,13 @@ export default function BiensPage() {
               </select>
             </div>
             <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">{fl('freguesia', lang)}</label>
+              <select className={inp} value={filters.freguesia} onChange={e => setFilter('freguesia', e.target.value)}>
+                <option value="">—</option>
+                {freguesias.map(f => <option key={f} value={f}>{f}</option>)}
+              </select>
+            </div>
+            <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">{fl('bedrooms', lang)}</label>
               <select className={inp} value={filters.bedrooms} onChange={e => setFilter('bedrooms', e.target.value)}>
                 <option value="">{fl('allBeds', lang)}</option>
@@ -171,7 +189,15 @@ export default function BiensPage() {
               </select>
             </div>
           </div>
-          <div className="flex flex-wrap gap-3 items-end">
+          <div className="flex flex-wrap gap-3 items-end mt-3">
+            <div className="flex-1 min-w-[120px]">
+              <label className="block text-xs font-medium text-gray-500 mb-1">{fl('minArea', lang)}</label>
+              <input className={inp} type="number" value={filters.minArea} onChange={e => setFilter('minArea', e.target.value)} placeholder="Ex: 100" />
+            </div>
+            <div className="flex-1 min-w-[120px]">
+              <label className="block text-xs font-medium text-gray-500 mb-1">{fl('maxArea', lang)}</label>
+              <input className={inp} type="number" value={filters.maxArea} onChange={e => setFilter('maxArea', e.target.value)} placeholder="Ex: 500" />
+            </div>
             <div className="flex-1 min-w-[140px]">
               <label className="block text-xs font-medium text-gray-500 mb-1">{fl('minPrice', lang)}</label>
               <input className={inp} type="number" value={filters.minPrice} onChange={e => setFilter('minPrice', e.target.value)} placeholder="Ex: 100 000" />
