@@ -9,9 +9,9 @@ import { LANGS, t, type Lang } from '@/lib/translations'
 import { getDistricts, getConcelhos, getFreguesias } from '@/lib/portugal'
 
 const FILTER_LABELS: Record<string, Record<string, string>> = {
-  district: { fr: 'Région', pt: 'Distrito', en: 'District', de: 'Bezirk', nl: 'District', zh: '地区' },
+  district: { fr: 'Province', pt: 'Distrito', en: 'District', de: 'Bezirk', nl: 'District', zh: '地区' },
   concelho: { fr: 'Commune', pt: 'Concelho', en: 'Municipality', de: 'Gemeinde', nl: 'Gemeente', zh: '市镇' },
-  freguesia: { fr: 'Quartier', pt: 'Freguesia', en: 'Parish', de: 'Gemeindebezirk', nl: 'Parochie', zh: '教区' },
+  freguesia: { fr: 'Village', pt: 'Freguesia', en: 'Parish', de: 'Gemeindebezirk', nl: 'Parochie', zh: '教区' },
   type: { fr: 'Type de bien', pt: 'Tipo de imóvel', en: 'Property type', de: 'Immobilientyp', nl: 'Type woning', zh: '房产类型' },
   bedrooms: { fr: 'Chambres min.', pt: 'Quartos mín.', en: 'Min. bedrooms', de: 'Mind. Zimmer', nl: 'Min. slaapk.', zh: '最少卧室' },
   minArea: { fr: 'Surface min. (m²)', pt: 'Área mín. (m²)', en: 'Min. area (m²)', de: 'Mind. Fläche (m²)', nl: 'Min. opp. (m²)', zh: '最小面积 (m²)' },

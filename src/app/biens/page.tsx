@@ -10,9 +10,9 @@ import { getDistricts, getConcelhos, getFreguesias } from '@/lib/portugal'
 type AgentContact = { email: string; phone: string; whatsapp: string; slug: string }
 
 const FILTER_LABELS: Record<string, Record<string, string>> = {
-  district:  { fr: 'Région',        pt: 'Distrito',      en: 'District',       de: 'Bezirk',        nl: 'District',   zh: '地区' },
+  district:  { fr: 'Province',       pt: 'Distrito',      en: 'District',       de: 'Bezirk',        nl: 'District',   zh: '地区' },
   concelho:  { fr: 'Commune',       pt: 'Concelho',      en: 'Municipality',   de: 'Gemeinde',      nl: 'Gemeente',   zh: '市镇' },
-  freguesia: { fr: 'Quartier',      pt: 'Freguesia',     en: 'Parish',         de: 'Gemeindebezirk',nl: 'Parochie',   zh: '教区' },
+  freguesia: { fr: 'Village',       pt: 'Freguesia',     en: 'Parish',         de: 'Gemeindebezirk',nl: 'Parochie',   zh: '教区' },
   type:      { fr: 'Type de bien',  pt: 'Tipo de imóvel',en: 'Property type',  de: 'Immobilientyp', nl: 'Type woning',zh: '房产类型' },
   bedrooms:  { fr: 'Chambres min.', pt: 'Quartos mín.',  en: 'Min. bedrooms',  de: 'Mind. Zimmer',  nl: 'Min. slaapk.',zh: '最少卧室' },
   minArea:   { fr: 'Surface min. (m²)', pt: 'Área mín. (m²)', en: 'Min. area (m²)', de: 'Mind. Fläche (m²)', nl: 'Min. opp. (m²)', zh: '最小面积 (m²)' },
@@ -150,6 +150,17 @@ export default function BiensPage() {
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
             <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">{fl('type', lang)}</label>
+              <select className={inp} value={filters.type} onChange={e => setFilter('type', e.target.value)}>
+                <option value="">{fl('allTypes', lang)}</option>
+                <option value="villa">Villa / Maison</option>
+                <option value="apartment">Appartement</option>
+                <option value="land">Terrain</option>
+                <option value="commercial">Commercial</option>
+                <option value="other">Autre</option>
+              </select>
+            </div>
+            <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">{fl('district', lang)}</label>
               <select className={inp} value={filters.district} onChange={e => { setFilter('district', e.target.value); setFilter('concelho', ''); setFilter('freguesia', '') }}>
                 <option value="">—</option>
@@ -164,45 +175,34 @@ export default function BiensPage() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">{fl('type', lang)}</label>
-              <select className={inp} value={filters.type} onChange={e => setFilter('type', e.target.value)}>
-                <option value="">{fl('allTypes', lang)}</option>
-                <option value="villa">Villa / Maison</option>
-                <option value="apartment">Appartement</option>
-                <option value="land">Terrain</option>
-                <option value="commercial">Commercial</option>
-                <option value="other">Autre</option>
-              </select>
-            </div>
-            <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">{fl('freguesia', lang)}</label>
               <select className={inp} value={filters.freguesia} onChange={e => setFilter('freguesia', e.target.value)}>
                 <option value="">—</option>
                 {freguesias.map(f => <option key={f} value={f}>{f}</option>)}
               </select>
             </div>
-            <div>
+          </div>
+          <div className="flex flex-wrap gap-3 items-end">
+            <div className="flex-1 min-w-[100px]">
               <label className="block text-xs font-medium text-gray-500 mb-1">{fl('bedrooms', lang)}</label>
               <select className={inp} value={filters.bedrooms} onChange={e => setFilter('bedrooms', e.target.value)}>
                 <option value="">{fl('allBeds', lang)}</option>
                 {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}+</option>)}
               </select>
             </div>
-          </div>
-          <div className="flex flex-wrap gap-3 items-end mt-3">
-            <div className="flex-1 min-w-[120px]">
+            <div className="flex-1 min-w-[110px]">
               <label className="block text-xs font-medium text-gray-500 mb-1">{fl('minArea', lang)}</label>
               <input className={inp} type="number" value={filters.minArea} onChange={e => setFilter('minArea', e.target.value)} placeholder="Ex: 100" />
             </div>
-            <div className="flex-1 min-w-[120px]">
+            <div className="flex-1 min-w-[110px]">
               <label className="block text-xs font-medium text-gray-500 mb-1">{fl('maxArea', lang)}</label>
               <input className={inp} type="number" value={filters.maxArea} onChange={e => setFilter('maxArea', e.target.value)} placeholder="Ex: 500" />
             </div>
-            <div className="flex-1 min-w-[140px]">
+            <div className="flex-1 min-w-[130px]">
               <label className="block text-xs font-medium text-gray-500 mb-1">{fl('minPrice', lang)}</label>
               <input className={inp} type="number" value={filters.minPrice} onChange={e => setFilter('minPrice', e.target.value)} placeholder="Ex: 100 000" />
             </div>
-            <div className="flex-1 min-w-[140px]">
+            <div className="flex-1 min-w-[130px]">
               <label className="block text-xs font-medium text-gray-500 mb-1">{fl('maxPrice', lang)}</label>
               <input className={inp} type="number" value={filters.maxPrice} onChange={e => setFilter('maxPrice', e.target.value)} placeholder="Ex: 500 000" />
             </div>
