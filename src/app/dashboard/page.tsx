@@ -532,6 +532,7 @@ export default function DashboardPage() {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          <a href="/biens" className="text-sm text-gray-400 hover:text-gray-600">🌐 Site public</a>
           {agentSlug && <a href={`/agents/${agentSlug}`} target="_blank" className="text-sm text-orange-500 hover:underline font-medium">Voir ma page →</a>}
           <a href="/dashboard/settings" className="text-sm text-gray-400 hover:text-gray-600">⚙️ Paramètres</a>
           <button onClick={handleLogout} className="text-sm text-gray-400 hover:text-gray-600">Déconnexion</button>
