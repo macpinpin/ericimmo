@@ -24,6 +24,12 @@ const FILTER_LABELS: Record<string, Record<string, string>> = {
   allBeds:   { fr: 'Peu importe',   pt: 'Qualquer',      en: 'Any',            de: 'Egal',          nl: 'Maakt niet uit', zh: '不限' },
   noResult:  { fr: 'Aucun bien ne correspond à vos critères.', pt: 'Nenhum imóvel corresponde.', en: 'No properties match.', de: 'Keine Treffer.', nl: 'Geen resultaten.', zh: '无匹配房产。' },
   properties:{ fr: 'biens disponibles', pt: 'imóveis disponíveis', en: 'properties available', de: 'Immobilien verfügbar', nl: 'woningen beschikbaar', zh: '套房产' },
+  subtitle:  { fr: 'Tous les biens disponibles', pt: 'Todos os imóveis disponíveis', en: 'All available properties', de: 'Alle verfügbaren Immobilien', nl: 'Alle beschikbare woningen', zh: '所有可用房产' },
+  villa:     { fr: 'Villa / Maison', pt: 'Moradia / Casa', en: 'Villa / House', de: 'Villa / Haus', nl: 'Villa / Huis', zh: '别墅 / 房子' },
+  apartment: { fr: 'Appartement', pt: 'Apartamento', en: 'Apartment', de: 'Wohnung', nl: 'Appartement', zh: '公寓' },
+  land:      { fr: 'Terrain', pt: 'Terreno', en: 'Land', de: 'Grundstück', nl: 'Grond', zh: '土地' },
+  commercial:{ fr: 'Commercial', pt: 'Comercial', en: 'Commercial', de: 'Gewerbe', nl: 'Commercieel', zh: '商业' },
+  other:     { fr: 'Autre', pt: 'Outro', en: 'Other', de: 'Andere', nl: 'Andere', zh: '其他' },
 }
 
 function fl(key: string, lang: string) {
@@ -118,7 +124,7 @@ export default function BiensPage() {
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">🏠 Habiteo</h1>
-            <p className="text-white/70 text-sm mt-1">Tous les biens disponibles</p>
+            <p className="text-white/70 text-sm mt-1">{fl('subtitle', lang)}</p>
           </div>
 
           {/* Sélecteur langue */}
@@ -153,11 +159,11 @@ export default function BiensPage() {
               <label className="block text-xs font-medium text-gray-500 mb-1">{fl('type', lang)}</label>
               <select className={inp} value={filters.type} onChange={e => setFilter('type', e.target.value)}>
                 <option value="">{fl('allTypes', lang)}</option>
-                <option value="villa">Villa / Maison</option>
-                <option value="apartment">Appartement</option>
-                <option value="land">Terrain</option>
-                <option value="commercial">Commercial</option>
-                <option value="other">Autre</option>
+                <option value="villa">{fl('villa', lang)}</option>
+                <option value="apartment">{fl('apartment', lang)}</option>
+                <option value="land">{fl('land', lang)}</option>
+                <option value="commercial">{fl('commercial', lang)}</option>
+                <option value="other">{fl('other', lang)}</option>
               </select>
             </div>
             <div>
