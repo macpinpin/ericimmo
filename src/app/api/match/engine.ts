@@ -146,31 +146,44 @@ export async function runMatching(debug = false) {
 }
 
 async function sendEmails(matches: Array<{ buyer: Buyer; property: Property; score: number }>) {
-  // Batch fetch all unique agent emails
+  // Fetch agent profiles (name + contact_email + phone + whatsapp)
   const agentIds = [...new Set(matches.flatMap(m => [m.buyer.agent_id, m.property.agent_id]))]
-  const emailMap = new Map<string, string>()
-  await Promise.all(
-    agentIds.map(async id => {
-      const { data } = await supabase.auth.admin.getUserById(id)
-      if (data?.user?.email) emailMap.set(id, data.user.email)
-    })
-  )
+  type AgentProfile = { id: string; name: string; contact_email: string | null; email: string; phone: string | null; whatsapp: string | null }
+  const { data: agentProfiles } = await supabase.from('agents').select('id,name,contact_email,email,phone,whatsapp').in('id', agentIds)
+  const agentMap = new Map<string, AgentProfile>()
+  for (const a of (agentProfiles || []) as AgentProfile[]) agentMap.set(a.id, a)
 
   for (const { buyer, property, score } of matches) {
-    const buyerAgentEmail = emailMap.get(buyer.agent_id)
-    const sellerAgentEmail = emailMap.get(property.agent_id)
+    const buyerAgent = agentMap.get(buyer.agent_id)
+    const sellerAgent = agentMap.get(property.agent_id)
+    const isInterAgent = buyer.agent_id !== property.agent_id
+
+    const buyerAgentEmail = buyerAgent?.contact_email || buyerAgent?.email
+    const sellerAgentEmail = sellerAgent?.contact_email || sellerAgent?.email
+
     const priceFormatted = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(property.price)
     const scoreBar = '█'.repeat(Math.round(score / 10)) + '░'.repeat(10 - Math.round(score / 10))
 
+    // Email à l'agent acheteur
     if (buyerAgentEmail) {
+      const sellerContact = isInterAgent && sellerAgent ? `
+        <div style="margin-top:24px;background:#f9fafb;border:1px solid #eee;border-radius:10px;padding:16px">
+          <p style="margin:0 0 8px;font-size:12px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:0.05em">Agent propriétaire du bien</p>
+          <p style="margin:0;font-weight:600;color:#111">${sellerAgent.name}</p>
+          ${sellerAgent.phone ? `<p style="margin:4px 0 0;font-size:13px;color:#555">📞 ${sellerAgent.phone}</p>` : ''}
+          ${sellerAgent.whatsapp ? `<p style="margin:4px 0 0;font-size:13px;color:#555">💬 <a href="https://wa.me/${sellerAgent.whatsapp}" style="color:#25D366">WhatsApp</a></p>` : ''}
+          <p style="margin:4px 0 0;font-size:13px;color:#555">✉️ <a href="mailto:${sellerAgentEmail}" style="color:#f97316">${sellerAgentEmail}</a></p>
+        </div>` : ''
+
       await resend.emails.send({
-        from: 'Habiteo Matching <onboarding@resend.dev>',
+        from: 'Habiteo Matching <invitation@e-mo-tec.com>',
         to: buyerAgentEmail,
         subject: `🔔 Match ${score}% — ${buyer.name} ↔ ${property.title}`,
         html: `
           <div style="font-family:sans-serif;max-width:600px;margin:0 auto">
             <div style="background:#f97316;padding:24px;border-radius:12px 12px 0 0">
               <h1 style="color:white;margin:0;font-size:22px">🔔 Nouveau match Habiteo</h1>
+              ${isInterAgent ? '<p style="color:rgba(255,255,255,0.85);margin:6px 0 0;font-size:13px">Match inter-agents</p>' : ''}
             </div>
             <div style="background:white;padding:24px;border:1px solid #eee;border-top:none;border-radius:0 0 12px 12px">
               <p style="font-size:32px;font-weight:bold;color:#f97316;margin:0 0 4px">${score}%</p>
@@ -187,26 +200,51 @@ async function sendEmails(matches: Array<{ buyer: Buyer; property: Property; sco
                 <tr><td style="padding:6px 0;color:#666">Localisation</td><td>${[property.district, property.concelho].filter(Boolean).join(' › ') || property.location}</td></tr>
                 ${property.is_offmarket ? '<tr><td style="padding:6px 0;color:#666">Statut</td><td>🔒 Off-market</td></tr>' : ''}
               </table>
+              ${sellerContact}
             </div>
           </div>`,
       }).catch(console.error)
     }
 
-    if (property.is_offmarket && sellerAgentEmail && sellerAgentEmail !== buyerAgentEmail) {
+    // Email à l'agent vendeur (uniquement si inter-agents)
+    if (isInterAgent && sellerAgentEmail && sellerAgentEmail !== buyerAgentEmail) {
+      const buyerContact = buyerAgent ? `
+        <div style="margin-top:24px;background:#f9fafb;border:1px solid #eee;border-radius:10px;padding:16px">
+          <p style="margin:0 0 8px;font-size:12px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:0.05em">Agent à contacter</p>
+          <p style="margin:0;font-weight:600;color:#111">${buyerAgent.name}</p>
+          ${buyerAgent.phone ? `<p style="margin:4px 0 0;font-size:13px;color:#555">📞 ${buyerAgent.phone}</p>` : ''}
+          ${buyerAgent.whatsapp ? `<p style="margin:4px 0 0;font-size:13px;color:#555">💬 <a href="https://wa.me/${buyerAgent.whatsapp}" style="color:#25D366">WhatsApp</a></p>` : ''}
+          <p style="margin:4px 0 0;font-size:13px;color:#555">✉️ <a href="mailto:${buyerAgentEmail}" style="color:#f97316">${buyerAgentEmail}</a></p>
+        </div>` : ''
+
       await resend.emails.send({
-        from: 'Habiteo Matching <onboarding@resend.dev>',
+        from: 'Habiteo Matching <invitation@e-mo-tec.com>',
         to: sellerAgentEmail,
-        subject: `🔔 Match ${score}% — Intérêt pour votre bien off-market ${property.ref || property.title}`,
+        subject: `🔔 Match ${score}% — Acheteur potentiel pour "${property.title}"`,
         html: `
           <div style="font-family:sans-serif;max-width:600px;margin:0 auto">
             <div style="background:#f97316;padding:24px;border-radius:12px 12px 0 0">
-              <h1 style="color:white;margin:0;font-size:22px">🔔 Intérêt pour votre bien off-market</h1>
+              <h1 style="color:white;margin:0;font-size:22px">🔔 Un confrère a un acheteur pour votre bien</h1>
             </div>
             <div style="background:white;padding:24px;border:1px solid #eee;border-top:none;border-radius:0 0 12px 12px">
               <p style="font-size:32px;font-weight:bold;color:#f97316;margin:0 0 4px">${score}%</p>
               <p style="font-family:monospace;color:#999;font-size:13px;margin:0 0 24px">${scoreBar}</p>
               <h2 style="margin:0 0 8px;font-size:18px">Votre bien : ${property.title}</h2>
-              <p style="font-size:14px;color:#444">Un confrère Habiteo a un acheteur à <strong>${score}%</strong> de compatibilité. Connectez-vous au dashboard pour voir les détails.</p>
+              <table style="width:100%;border-collapse:collapse;margin-bottom:16px;font-size:14px">
+                <tr><td style="padding:6px 0;color:#666">Prix</td><td style="font-weight:bold">${priceFormatted}</td></tr>
+                <tr><td style="padding:6px 0;color:#666">Localisation</td><td>${[property.district, property.concelho].filter(Boolean).join(' › ') || property.location}</td></tr>
+              </table>
+              <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:16px;margin-bottom:16px">
+                <p style="margin:0;font-size:14px;color:#92400e">Un confrère a un acheteur dont les critères correspondent à <strong>${score}%</strong> à votre bien. Les coordonnées de l'acheteur restent confidentielles — contactez l'agent directement pour organiser une collaboration.</p>
+              </div>
+              <h3 style="margin:0 0 4px;font-size:15px">Critères généraux de l'acheteur</h3>
+              <table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:16px">
+                <tr><td style="padding:6px 0;color:#666">Budget max</td><td>${buyer.budget_max ? new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(buyer.budget_max) : '—'}</td></tr>
+                <tr><td style="padding:6px 0;color:#666">Type souhaité</td><td>${buyer.property_type || '—'}</td></tr>
+                <tr><td style="padding:6px 0;color:#666">Zone</td><td>${[buyer.district, buyer.concelho].filter(Boolean).join(' › ') || '—'}</td></tr>
+                <tr><td style="padding:6px 0;color:#666">Chambres min.</td><td>${buyer.bedrooms_min || '—'}</td></tr>
+              </table>
+              ${buyerContact}
             </div>
           </div>`,
       }).catch(console.error)
