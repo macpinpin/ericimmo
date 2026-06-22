@@ -539,6 +539,25 @@ export default function DashboardPage() {
         </div>
       </header>
 
+      {/* Bandeau onboarding si profil incomplet */}
+      {!form.phone && !form.bio && !photoUrl && (
+        <div className="bg-orange-50 border-b border-orange-100 px-6 py-4">
+          <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">👋</span>
+              <div>
+                <p className="font-semibold text-orange-800 text-sm">Bienvenue sur Habiteo ! Complétez votre profil pour activer votre minisite.</p>
+                <p className="text-xs text-orange-600 mt-0.5">Ajoutez votre photo, téléphone et bio pour que vos clients puissent vous contacter.</p>
+              </div>
+            </div>
+            <button onClick={() => setTab('profile')}
+              className="bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors whitespace-nowrap">
+              Compléter mon profil →
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-5xl mx-auto px-6 py-8">
 
         {/* Stats */}
