@@ -449,7 +449,7 @@ export default function DashboardPage() {
   async function loadMatches(agentId: string) {
     const { data } = await supabase
       .from('matches')
-      .select('*, buyer:buyers(*), property:properties(*)')
+      .select('*, buyer:buyers(*), property:properties(*), buyer_agent:agents!buyer_agent_id(id,name,phone,contact_email,email,whatsapp), seller_agent:agents!seller_agent_id(id,name,phone,contact_email,email,whatsapp)')
       .or(`buyer_agent_id.eq.${agentId},seller_agent_id.eq.${agentId}`)
       .order('created_at', { ascending: false })
     setMatches((data || []) as Match[])
@@ -790,6 +790,8 @@ export default function DashboardPage() {
                   const buyer = m.buyer as Buyer | undefined
                   const prop = m.property as Property | undefined
                   const isMine = m.buyer_agent_id === user?.id
+                  const partnerAgent = isMine ? (m as any).seller_agent : (m as any).buyer_agent
+                  const isInterAgent = m.buyer_agent_id !== m.seller_agent_id
                   return (
                     <div key={m.id} className={`bg-white rounded-xl border p-5 ${m.status === 'new' ? 'border-orange-200 shadow-sm shadow-orange-50' : 'border-gray-100'}`}>
                       <div className="flex items-start justify-between gap-4">
@@ -813,7 +815,18 @@ export default function DashboardPage() {
                                   </p>
                                 </>
                               ) : (
-                                <p className="text-xs text-gray-400 italic">Coordonnées confidentielles</p>
+                                <>
+                                  <p className="text-xs text-gray-400 italic mb-2">Coordonnées confidentielles</p>
+                                  {isInterAgent && partnerAgent && (
+                                    <div className="border-t border-blue-100 pt-2 mt-1">
+                                      <p className="text-xs font-semibold text-blue-600 mb-1">Agent à contacter :</p>
+                                      <p className="text-sm font-semibold text-gray-900">{partnerAgent.name}</p>
+                                      {partnerAgent.phone && <a href={`tel:${partnerAgent.phone}`} className="text-xs text-gray-600 hover:text-orange-500 block mt-0.5">📞 {partnerAgent.phone}</a>}
+                                      {partnerAgent.whatsapp && <a href={`https://wa.me/${partnerAgent.whatsapp}`} target="_blank" rel="noopener" className="text-xs text-green-600 hover:text-green-700 block mt-0.5">💬 WhatsApp</a>}
+                                      <a href={`mailto:${partnerAgent.contact_email || partnerAgent.email}`} className="text-xs text-orange-500 hover:underline block mt-0.5">✉️ {partnerAgent.contact_email || partnerAgent.email}</a>
+                                    </div>
+                                  )}
+                                </>
                               )}
                             </div>
                             <div className="bg-green-50 rounded-xl p-3">
