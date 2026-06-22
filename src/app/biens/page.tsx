@@ -127,7 +127,11 @@ export default function BiensPage() {
             <p className="text-white/70 text-sm mt-1">{fl('subtitle', lang)}</p>
           </div>
 
-          {/* Sélecteur langue */}
+          {/* Bouton agent + sélecteur langue */}
+          <div className="flex items-center gap-3">
+          <a href="/dashboard" className="text-white/60 hover:text-white text-xs font-medium transition-colors border border-white/20 hover:border-white/40 px-3 py-1.5 rounded-lg">
+            Espace agent
+          </a>
           <div className="relative">
             <button
               onClick={() => setLangOpen(o => !o)}
@@ -147,6 +151,7 @@ export default function BiensPage() {
                 ))}
               </div>
             )}
+          </div>
           </div>
         </div>
       </div>
