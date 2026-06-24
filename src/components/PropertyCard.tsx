@@ -31,14 +31,19 @@ export function PropertyCard({ p, lang, onOpen }: { p: Property; lang: Lang; onO
   return (
     <div onClick={onOpen} className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer group">
       <div className="relative aspect-video bg-gray-100" style={{ touchAction: 'pan-x' }}
-        onTouchStart={e => { (e.currentTarget as any)._touchX = e.touches[0].clientX }}
+        onTouchStart={e => {
+          ;(e.currentTarget as any)._touchX = e.touches[0].clientX
+          ;(e.currentTarget as any)._touchY = e.touches[0].clientY
+        }}
         onTouchEnd={e => {
           const startX = (e.currentTarget as any)._touchX
+          const startY = (e.currentTarget as any)._touchY
           if (startX === undefined) return
-          const diff = startX - e.changedTouches[0].clientX
-          if (Math.abs(diff) > 40 && p.images.length > 1) {
+          const dx = startX - e.changedTouches[0].clientX
+          const dy = startY - e.changedTouches[0].clientY
+          if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40 && p.images.length > 1) {
             e.stopPropagation()
-            if (diff > 0) setImgIdx(i => (i + 1) % p.images.length)
+            if (dx > 0) setImgIdx(i => (i + 1) % p.images.length)
             else setImgIdx(i => (i - 1 + p.images.length) % p.images.length)
           }
         }}
@@ -137,15 +142,17 @@ export function PropertyModal({
 
         <div className="relative aspect-video bg-black rounded-t-2xl overflow-hidden" style={{ touchAction: 'pan-x' }}
           onTouchStart={e => {
-            const x = e.touches[0].clientX
-            ;(e.currentTarget as any)._touchX = x
+            ;(e.currentTarget as any)._touchX = e.touches[0].clientX
+            ;(e.currentTarget as any)._touchY = e.touches[0].clientY
           }}
           onTouchEnd={e => {
             const startX = (e.currentTarget as any)._touchX
+            const startY = (e.currentTarget as any)._touchY
             if (startX === undefined) return
-            const diff = startX - e.changedTouches[0].clientX
-            if (Math.abs(diff) > 40 && p.images.length > 1) {
-              if (diff > 0) setImgIdx(i => (i + 1) % p.images.length)
+            const dx = startX - e.changedTouches[0].clientX
+            const dy = startY - e.changedTouches[0].clientY
+            if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40 && p.images.length > 1) {
+              if (dx > 0) setImgIdx(i => (i + 1) % p.images.length)
               else setImgIdx(i => (i - 1 + p.images.length) % p.images.length)
             }
           }}
