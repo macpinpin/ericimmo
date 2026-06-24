@@ -30,7 +30,7 @@ export function PropertyCard({ p, lang, onOpen }: { p: Property; lang: Lang; onO
 
   return (
     <div onClick={onOpen} className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer group">
-      <div className="relative aspect-video bg-gray-100"
+      <div className="relative aspect-video bg-gray-100" style={{ touchAction: 'pan-x' }}
         onTouchStart={e => { (e.currentTarget as any)._touchX = e.touches[0].clientX }}
         onTouchEnd={e => {
           const startX = (e.currentTarget as any)._touchX
@@ -135,7 +135,7 @@ export function PropertyModal({
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
 
-        <div className="relative aspect-video bg-black rounded-t-2xl overflow-hidden"
+        <div className="relative aspect-video bg-black rounded-t-2xl overflow-hidden" style={{ touchAction: 'pan-x' }}
           onTouchStart={e => {
             const x = e.touches[0].clientX
             ;(e.currentTarget as any)._touchX = x
