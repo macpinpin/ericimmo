@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { Property } from '@/lib/types'
 import { t, type Lang } from '@/lib/translations'
 
@@ -101,6 +101,66 @@ function getYoutubeId(url: string): string | null {
   return match ? match[1] : null
 }
 
+function FullscreenGallery({ images, startIdx, onClose }: { images: string[]; startIdx: number; onClose: () => void }) {
+  const [idx, setIdx] = useState(startIdx)
+  const touchX = useRef<number | null>(null)
+  const touchY = useRef<number | null>(null)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    ref.current?.requestFullscreen?.().catch(() => {})
+    return () => { if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {}) }
+  }, [])
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight') setIdx(i => (i + 1) % images.length)
+      if (e.key === 'ArrowLeft') setIdx(i => (i - 1 + images.length) % images.length)
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [images.length, onClose])
+
+  return (
+    <div ref={ref} className="fixed inset-0 z-[9999] bg-black flex items-center justify-center"
+      style={{ touchAction: 'none' }}
+      onTouchStart={e => { touchX.current = e.touches[0].clientX; touchY.current = e.touches[0].clientY }}
+      onTouchEnd={e => {
+        if (touchX.current === null || touchY.current === null) return
+        const dx = touchX.current - e.changedTouches[0].clientX
+        const dy = touchY.current - e.changedTouches[0].clientY
+        if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
+          if (dx > 0) setIdx(i => (i + 1) % images.length)
+          else setIdx(i => (i - 1 + images.length) % images.length)
+        } else if (Math.abs(dy) > 80 && Math.abs(dy) > Math.abs(dx)) {
+          onClose()
+        }
+        touchX.current = null; touchY.current = null
+      }}
+    >
+      <img src={images[idx]} alt="" className="max-w-full max-h-full object-contain select-none" draggable={false} />
+
+      <button onClick={onClose} className="absolute top-4 right-4 bg-white/20 text-white w-10 h-10 rounded-full flex items-center justify-center text-xl backdrop-blur-sm">✕</button>
+
+      {images.length > 1 && (
+        <>
+          <button onClick={() => setIdx(i => (i - 1 + images.length) % images.length)}
+            className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/20 text-white w-11 h-11 rounded-full flex items-center justify-center text-2xl backdrop-blur-sm">‹</button>
+          <button onClick={() => setIdx(i => (i + 1) % images.length)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/20 text-white w-11 h-11 rounded-full flex items-center justify-center text-2xl backdrop-blur-sm">›</button>
+          <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex gap-1.5">
+            {images.map((_, i) => (
+              <button key={i} onClick={() => setIdx(i)} className={`w-2 h-2 rounded-full transition-colors ${i === idx ? 'bg-white' : 'bg-white/40'}`} />
+            ))}
+          </div>
+          <div className="absolute bottom-5 right-5 text-white/60 text-sm">{idx + 1} / {images.length}</div>
+        </>
+      )}
+    </div>
+  )
+}
+
 export type AgentContact = {
   email: string
   phone: string
@@ -123,6 +183,7 @@ export function PropertyModal({
   const [showVideo, setShowVideo] = useState(false)
   const [showVtour, setShowVtour] = useState(false)
   const [showShare, setShowShare] = useState(false)
+  const [fullscreen, setFullscreen] = useState(false)
   const [copied, setCopied] = useState(false)
   const [showContact, setShowContact] = useState(false)
   const [contactForm, setContactForm] = useState({ name: '', email: '', phone: '', message: '' })
@@ -137,6 +198,10 @@ export function PropertyModal({
   }
 
   return (
+    <>
+    {fullscreen && p.images.length > 0 && (
+      <FullscreenGallery images={p.images} startIdx={imgIdx} onClose={() => setFullscreen(false)} />
+    )}
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
 
@@ -164,7 +229,8 @@ export function PropertyModal({
           ) : (
             <>
               {p.images?.[imgIdx] ? (
-                <img src={p.images[imgIdx]} alt={p.title} className="absolute inset-0 w-full h-full object-cover" />
+                <img src={p.images[imgIdx]} alt={p.title} className="absolute inset-0 w-full h-full object-cover cursor-zoom-in"
+                  onClick={() => setFullscreen(true)} />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-gray-300 text-5xl">🏠</div>
               )}
@@ -321,5 +387,6 @@ export function PropertyModal({
         </div>
       </div>
     </div>
+    </>
   )
 }
