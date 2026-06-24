@@ -3,11 +3,10 @@
 import { useEffect, useState, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { Property, Agent } from '@/lib/types'
-import { PropertyCard, PropertyModal } from '@/components/PropertyCard'
+import { PropertyCard, PropertyModal, type AgentContact } from '@/components/PropertyCard'
 import { LANGS, type Lang } from '@/lib/translations'
 import { getDistricts, getConcelhos, getFreguesias } from '@/lib/portugal'
 
-type AgentContact = { email: string; phone: string; whatsapp: string; slug: string }
 
 const FILTER_LABELS: Record<string, Record<string, string>> = {
   district:  { fr: 'Province',       pt: 'Distrito',      en: 'District',       de: 'Bezirk',        nl: 'District',   zh: '地区' },
@@ -114,6 +113,8 @@ export default function BiensPage() {
       phone: a?.phone || '',
       whatsapp: a?.whatsapp || '',
       slug: a?.slug || '',
+      name: a?.name || '',
+      photo: a?.photo_url || '',
     }
   }
 
@@ -257,18 +258,7 @@ export default function BiensPage() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filtered.map(p => (
-                  <div key={p.id} className="relative">
-                    {/* Badge agent */}
-                    {agents.get(p.agent_id) && (
-                      <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 bg-white/90 backdrop-blur-sm rounded-full px-2.5 py-1 shadow-sm">
-                        {agents.get(p.agent_id)?.photo_url && (
-                          <img src={agents.get(p.agent_id)!.photo_url!} alt="" className="w-5 h-5 rounded-full object-cover" />
-                        )}
-                        <span className="text-xs font-semibold text-gray-700">{agents.get(p.agent_id)?.name}</span>
-                      </div>
-                    )}
-                    <PropertyCard p={p} lang={lang} onOpen={() => setSelected(p)} />
-                  </div>
+                  <PropertyCard key={p.id} p={p} lang={lang} onOpen={() => setSelected(p)} />
                 ))}
               </div>
             )}

@@ -89,6 +89,8 @@ export type AgentContact = {
   phone: string
   whatsapp: string
   slug: string
+  name?: string
+  photo?: string
 }
 
 export function PropertyModal({
@@ -271,6 +273,16 @@ export function PropertyModal({
               {(p.translations?.description?.[lang] || p.description)!.split('\n\n').map((para, i) => (
                 <p key={i} className="text-gray-600 text-sm leading-relaxed mb-3">{para}</p>
               ))}
+            </div>
+          )}
+
+          {agent.name && (
+            <div className="flex items-center gap-3 mt-5 pt-5 border-t border-gray-100">
+              {agent.photo && <img src={agent.photo} alt={agent.name} className="w-10 h-10 rounded-full object-cover flex-shrink-0" />}
+              <div>
+                <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">Agent</p>
+                <p className="font-semibold text-gray-900 text-sm">{agent.name}</p>
+              </div>
             </div>
           )}
         </div>
