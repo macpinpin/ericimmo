@@ -1,3 +1,12 @@
+export type AgentPublic = {
+  id: string
+  name: string
+  phone: string | null
+  email: string
+  contact_email: string | null
+  whatsapp: string | null
+}
+
 export type Match = {
   id: string
   buyer_id: string
@@ -10,6 +19,8 @@ export type Match = {
   created_at: string
   buyer?: Buyer
   property?: Property
+  buyer_agent?: AgentPublic
+  seller_agent?: AgentPublic
 }
 
 export type Buyer = {

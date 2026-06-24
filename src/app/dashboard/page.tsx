@@ -790,7 +790,7 @@ export default function DashboardPage() {
                   const buyer = m.buyer as Buyer | undefined
                   const prop = m.property as Property | undefined
                   const isMine = m.buyer_agent_id === user?.id
-                  const partnerAgent = isMine ? (m as any).seller_agent : (m as any).buyer_agent
+                  const partnerAgent = isMine ? m.seller_agent : m.buyer_agent
                   const isInterAgent = m.buyer_agent_id !== m.seller_agent_id
                   return (
                     <div key={m.id} className={`bg-white rounded-xl border p-5 ${m.status === 'new' ? 'border-orange-200 shadow-sm shadow-orange-50' : 'border-gray-100'}`}>
