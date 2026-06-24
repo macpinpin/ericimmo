@@ -407,6 +407,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<'properties' | 'buyers' | 'matches' | 'invite' | 'profile'>('properties')
   const [agentSlug, setAgentSlug] = useState<string | null>(null)
+  const [profileComplete, setProfileComplete] = useState(true)
   const isAdmin = user?.email === 'macpinpin@me.com'
 
   const [properties, setProperties] = useState<Property[]>([])
@@ -429,8 +430,9 @@ export default function DashboardPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/login'); return }
     setUser({ id: user.id, email: user.email! })
-    supabase.from('agents').select('slug').eq('id', user.id).single().then(({ data }) => {
+    supabase.from('agents').select('slug,phone,bio,photo_url').eq('id', user.id).single().then(({ data }) => {
       if (data?.slug) setAgentSlug(data.slug)
+      if (!data?.phone && !data?.bio && !data?.photo_url) setProfileComplete(false)
     })
     await Promise.all([loadProperties(user.id), loadBuyers(user.id), loadMatches(user.id)])
     setLoading(false)
@@ -540,7 +542,7 @@ export default function DashboardPage() {
       </header>
 
       {/* Bandeau onboarding si profil incomplet */}
-      {!form.phone && !form.bio && !photoUrl && (
+      {!profileComplete && (
         <div className="bg-orange-50 border-b border-orange-100 px-6 py-4">
           <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
