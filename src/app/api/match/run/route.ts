@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'
 import { runMatching } from '../engine'
 
 export const maxDuration = 30

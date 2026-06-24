@@ -2,11 +2,12 @@ import { createClient } from '@supabase/supabase-js'
 import { Resend } from 'resend'
 import type { Buyer, Property } from '@/lib/types'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
-const resend = new Resend(process.env.RESEND_API_KEY)
+function getClients() {
+  return {
+    supabase: createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!),
+    resend: new Resend(process.env.RESEND_API_KEY),
+  }
+}
 
 function computeScore(buyer: Buyer, property: Property): number {
   let score = 0
@@ -63,6 +64,7 @@ function computeScore(buyer: Buyer, property: Property): number {
 }
 
 export async function runMatching(debug = false) {
+  const { supabase, resend } = getClients()
   // 1. Fetch all data in parallel
   const [{ data: buyers }, { data: properties }] = await Promise.all([
     supabase.from('buyers').select('*'),
@@ -140,12 +142,13 @@ export async function runMatching(debug = false) {
   }
 
   // 5. Send emails in background (non-blocking)
-  sendEmails(toProcess).catch(console.error)
+  sendEmails(toProcess, supabase, resend).catch(console.error)
 
   return { matched: toProcess.length }
 }
 
-async function sendEmails(matches: Array<{ buyer: Buyer; property: Property; score: number }>) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function sendEmails(matches: Array<{ buyer: Buyer; property: Property; score: number }>, supabase: any, resend: Resend) {
   // Fetch agent profiles (name + contact_email + phone + whatsapp)
   const agentIds = [...new Set(matches.flatMap(m => [m.buyer.agent_id, m.property.agent_id]))]
   type AgentProfile = { id: string; name: string; contact_email: string | null; email: string; phone: string | null; whatsapp: string | null }
