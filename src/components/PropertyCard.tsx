@@ -30,7 +30,19 @@ export function PropertyCard({ p, lang, onOpen }: { p: Property; lang: Lang; onO
 
   return (
     <div onClick={onOpen} className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer group">
-      <div className="relative aspect-video bg-gray-100">
+      <div className="relative aspect-video bg-gray-100"
+        onTouchStart={e => { (e.currentTarget as any)._touchX = e.touches[0].clientX }}
+        onTouchEnd={e => {
+          const startX = (e.currentTarget as any)._touchX
+          if (startX === undefined) return
+          const diff = startX - e.changedTouches[0].clientX
+          if (Math.abs(diff) > 40 && p.images.length > 1) {
+            e.stopPropagation()
+            if (diff > 0) setImgIdx(i => (i + 1) % p.images.length)
+            else setImgIdx(i => (i - 1 + p.images.length) % p.images.length)
+          }
+        }}
+      >
         {p.images?.[imgIdx] ? (
           <img src={p.images[imgIdx]} alt={p.title} className="w-full h-full object-cover" />
         ) : (
