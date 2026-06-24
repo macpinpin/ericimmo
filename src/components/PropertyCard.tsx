@@ -123,7 +123,21 @@ export function PropertyModal({
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
 
-        <div className="relative aspect-video bg-black rounded-t-2xl overflow-hidden">
+        <div className="relative aspect-video bg-black rounded-t-2xl overflow-hidden"
+          onTouchStart={e => {
+            const x = e.touches[0].clientX
+            ;(e.currentTarget as any)._touchX = x
+          }}
+          onTouchEnd={e => {
+            const startX = (e.currentTarget as any)._touchX
+            if (startX === undefined) return
+            const diff = startX - e.changedTouches[0].clientX
+            if (Math.abs(diff) > 40 && p.images.length > 1) {
+              if (diff > 0) setImgIdx(i => (i + 1) % p.images.length)
+              else setImgIdx(i => (i - 1 + p.images.length) % p.images.length)
+            }
+          }}
+        >
           {showVtour && p.matterport_url ? (
             <iframe className="absolute inset-0 w-full h-full" src={p.matterport_url} allow="fullscreen; vr" allowFullScreen />
           ) : showVideo && youtubeId ? (
