@@ -7,28 +7,27 @@ import { PropertyCard, PropertyModal, type AgentContact } from '@/components/Pro
 import { LANGS, type Lang } from '@/lib/translations'
 import { getDistricts, getConcelhos, getFreguesias } from '@/lib/portugal'
 
-
 const FILTER_LABELS: Record<string, Record<string, string>> = {
   district:  { fr: 'Province',       pt: 'Distrito',      en: 'District',       de: 'Bezirk',        nl: 'District',   zh: '地区' },
-  concelho:  { fr: 'Commune',       pt: 'Concelho',      en: 'Municipality',   de: 'Gemeinde',      nl: 'Gemeente',   zh: '市镇' },
-  freguesia: { fr: 'Village',       pt: 'Freguesia',     en: 'Parish',         de: 'Gemeindebezirk',nl: 'Parochie',   zh: '教区' },
-  type:      { fr: 'Type de bien',  pt: 'Tipo de imóvel',en: 'Property type',  de: 'Immobilientyp', nl: 'Type woning',zh: '房产类型' },
-  bedrooms:  { fr: 'Chambres min.', pt: 'Quartos mín.',  en: 'Min. bedrooms',  de: 'Mind. Zimmer',  nl: 'Min. slaapk.',zh: '最少卧室' },
+  concelho:  { fr: 'Commune',        pt: 'Concelho',      en: 'Municipality',   de: 'Gemeinde',      nl: 'Gemeente',   zh: '市镇' },
+  freguesia: { fr: 'Village',        pt: 'Freguesia',     en: 'Parish',         de: 'Gemeindebezirk',nl: 'Parochie',   zh: '教区' },
+  type:      { fr: 'Type de bien',   pt: 'Tipo de imóvel',en: 'Property type',  de: 'Immobilientyp', nl: 'Type woning',zh: '房产类型' },
+  bedrooms:  { fr: 'Chambres min.',  pt: 'Quartos mín.',  en: 'Min. bedrooms',  de: 'Mind. Zimmer',  nl: 'Min. slaapk.',zh: '最少卧室' },
   minArea:   { fr: 'Surface min. (m²)', pt: 'Área mín. (m²)', en: 'Min. area (m²)', de: 'Mind. Fläche (m²)', nl: 'Min. opp. (m²)', zh: '最小面积 (m²)' },
   maxArea:   { fr: 'Surface max. (m²)', pt: 'Área máx. (m²)', en: 'Max. area (m²)', de: 'Max. Fläche (m²)', nl: 'Max. opp. (m²)', zh: '最大面积 (m²)' },
-  minPrice:  { fr: 'Prix min. (€)', pt: 'Preço mín. (€)',en: 'Min. price (€)', de: 'Min. Preis (€)', nl: 'Min. prijs (€)', zh: '最低价格 (€)' },
-  maxPrice:  { fr: 'Prix max. (€)', pt: 'Preço máx. (€)',en: 'Max. price (€)', de: 'Max. Preis (€)', nl: 'Max. prijs (€)', zh: '最高价格 (€)' },
+  minPrice:  { fr: 'Prix min. (€)',  pt: 'Preço mín. (€)',en: 'Min. price (€)', de: 'Min. Preis (€)', nl: 'Min. prijs (€)', zh: '最低价格 (€)' },
+  maxPrice:  { fr: 'Prix max. (€)',  pt: 'Preço máx. (€)',en: 'Max. price (€)', de: 'Max. Preis (€)', nl: 'Max. prijs (€)', zh: '最高价格 (€)' },
   reset:     { fr: 'Réinitialiser', pt: 'Reiniciar',     en: 'Reset',          de: 'Zurücksetzen',  nl: 'Resetten',   zh: '重置' },
-  allTypes:  { fr: 'Tous les types',pt: 'Todos os tipos',en: 'All types',      de: 'Alle Typen',    nl: 'Alle types', zh: '所有类型' },
-  allBeds:   { fr: 'Peu importe',   pt: 'Qualquer',      en: 'Any',            de: 'Egal',          nl: 'Maakt niet uit', zh: '不限' },
+  allTypes:  { fr: 'Tous les types', pt: 'Todos os tipos',en: 'All types',      de: 'Alle Typen',    nl: 'Alle types', zh: '所有类型' },
+  allBeds:   { fr: 'Peu importe',    pt: 'Qualquer',      en: 'Any',            de: 'Egal',          nl: 'Maakt niet uit', zh: '不限' },
   noResult:  { fr: 'Aucun bien ne correspond à vos critères.', pt: 'Nenhum imóvel corresponde.', en: 'No properties match.', de: 'Keine Treffer.', nl: 'Geen resultaten.', zh: '无匹配房产。' },
   properties:{ fr: 'biens disponibles', pt: 'imóveis disponíveis', en: 'properties available', de: 'Immobilien verfügbar', nl: 'woningen beschikbaar', zh: '套房产' },
-  subtitle:  { fr: 'Tous les biens disponibles', pt: 'Todos os imóveis disponíveis', en: 'All available properties', de: 'Alle verfügbaren Immobilien', nl: 'Alle beschikbare woningen', zh: '所有可用房产' },
+  subtitle:  { fr: 'Algarve · Portugal', pt: 'Algarve · Portugal', en: 'Algarve · Portugal', de: 'Algarve · Portugal', nl: 'Algarve · Portugal', zh: 'Algarve · Portugal' },
   villa:     { fr: 'Villa / Maison', pt: 'Moradia / Casa', en: 'Villa / House', de: 'Villa / Haus', nl: 'Villa / Huis', zh: '别墅 / 房子' },
-  apartment: { fr: 'Appartement', pt: 'Apartamento', en: 'Apartment', de: 'Wohnung', nl: 'Appartement', zh: '公寓' },
-  land:      { fr: 'Terrain', pt: 'Terreno', en: 'Land', de: 'Grundstück', nl: 'Grond', zh: '土地' },
-  commercial:{ fr: 'Commercial', pt: 'Comercial', en: 'Commercial', de: 'Gewerbe', nl: 'Commercieel', zh: '商业' },
-  other:     { fr: 'Autre', pt: 'Outro', en: 'Other', de: 'Andere', nl: 'Andere', zh: '其他' },
+  apartment: { fr: 'Appartement',   pt: 'Apartamento',   en: 'Apartment',      de: 'Wohnung',       nl: 'Appartement',zh: '公寓' },
+  land:      { fr: 'Terrain',       pt: 'Terreno',       en: 'Land',           de: 'Grundstück',    nl: 'Grond',      zh: '土地' },
+  commercial:{ fr: 'Commercial',    pt: 'Comercial',     en: 'Commercial',     de: 'Gewerbe',       nl: 'Commercieel',zh: '商业' },
+  other:     { fr: 'Autre',         pt: 'Outro',         en: 'Other',          de: 'Andere',        nl: 'Andere',     zh: '其他' },
 }
 
 function fl(key: string, lang: string) {
@@ -104,7 +103,8 @@ export default function BiensPage() {
 
   const hasFilters = Object.values(filters).some(v => v !== '')
   const currentLang = LANGS.find(l => l.code === lang) || LANGS[0]
-  const inp = "w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange-400 transition-colors bg-white"
+
+  const inp = "w-full bg-white border border-gray-200 px-3 py-2.5 text-sm text-gray-800 focus:outline-none focus:border-orange-400 transition-colors"
 
   function getAgentContact(agentId: string): AgentContact {
     const a = agents.get(agentId)
@@ -120,49 +120,63 @@ export default function BiensPage() {
 
   return (
     <main className="min-h-screen bg-white">
-      {/* Header */}
-      <div className="bg-orange-500 text-white px-6 py-8">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">🏠 Habiteo</h1>
-            <p className="text-white/70 text-sm mt-1">{fl('subtitle', lang)}</p>
-          </div>
 
-          {/* Bouton agent + sélecteur langue */}
-          <div className="flex items-center gap-3">
-          <a href="/dashboard" className="text-white/60 hover:text-white text-xs font-medium transition-colors border border-white/20 hover:border-white/40 px-3 py-1.5 rounded-lg">
-            Espace agent
-          </a>
-          <div className="relative">
-            <button
-              onClick={() => setLangOpen(o => !o)}
-              className="bg-white/20 hover:bg-white/30 text-white text-sm font-semibold px-3 py-1.5 rounded-lg flex items-center gap-2 transition-colors"
-            >
-              <span>{currentLang.flag}</span>
-              <span className="hidden sm:inline">{currentLang.label}</span>
-              <span className="text-xs">▾</span>
-            </button>
-            {langOpen && (
-              <div className="absolute right-0 top-10 bg-white rounded-xl shadow-xl border border-gray-100 py-1 z-50 grid grid-cols-2 w-44">
-                {LANGS.map(l => (
-                  <button key={l.code} onClick={() => switchLang(l.code)}
-                    className={`flex items-center gap-2 px-4 py-2 text-sm hover:bg-orange-50 transition-colors ${lang === l.code ? 'text-orange-500 font-semibold' : 'text-gray-700'}`}>
-                    <span>{l.flag}</span><span>{l.label}</span>
-                  </button>
-                ))}
-              </div>
-            )}
+      {/* Header */}
+      <header className="bg-white border-b border-gray-100 px-6 py-5 sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div>
+            <div className="text-2xl font-semibold tracking-[0.15em] text-gray-900">HABITEO</div>
+            <div className="text-[10px] tracking-[0.2em] text-orange-500 mt-0.5 uppercase">{fl('subtitle', lang)}</div>
           </div>
+          <div className="flex items-center gap-4">
+            <a href="/dashboard"
+              className="text-[11px] tracking-widest text-gray-400 hover:text-gray-900 transition-colors uppercase border border-gray-200 hover:border-gray-800 px-4 py-2">
+              Espace agent
+            </a>
+            <div className="relative">
+              <button onClick={() => setLangOpen(o => !o)}
+                className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors border border-gray-200 hover:border-gray-400 px-3 py-2">
+                <span>{currentLang.flag}</span>
+                <span className="text-[11px] tracking-widest uppercase hidden sm:inline">{currentLang.label}</span>
+                <span className="text-[10px] text-gray-400">▾</span>
+              </button>
+              {langOpen && (
+                <div className="absolute right-0 top-full mt-1 bg-white border border-gray-100 shadow-xl z-50 grid grid-cols-2 w-44">
+                  {LANGS.map(l => (
+                    <button key={l.code} onClick={() => switchLang(l.code)}
+                      className={`flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors ${lang === l.code ? 'text-orange-500 font-medium' : 'text-gray-600'}`}>
+                      <span>{l.flag}</span><span className="text-xs">{l.label}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
+        </div>
+      </header>
+
+      {/* Hero strip */}
+      <div className="bg-white px-6 py-10 border-b border-gray-100">
+        <div className="max-w-7xl mx-auto">
+          <p className="text-[11px] tracking-[0.25em] text-orange-500 uppercase mb-3">Algarve · Portugal</p>
+          <h1 className="text-3xl font-light text-gray-900 tracking-tight mb-2">Biens d&apos;exception</h1>
+          {!loading && (
+            <p className="text-sm text-gray-400">
+              <span className="text-orange-500 font-medium">{filtered.length}</span> {fl('properties', lang)}
+              {hasFilters && properties.filter(p => !p.is_offmarket).length !== filtered.length && (
+                <span className="text-gray-300"> / {properties.filter(p => !p.is_offmarket).length}</span>
+              )}
+            </p>
+          )}
         </div>
       </div>
 
       {/* Filtres */}
-      <div className="bg-gray-50 border-b border-gray-100 px-6 py-5">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+      <div className="bg-gray-50 border-b border-gray-100 px-6 py-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">{fl('type', lang)}</label>
+              <label className="block text-[10px] tracking-widest text-gray-400 uppercase mb-1.5">{fl('type', lang)}</label>
               <select className={inp} value={filters.type} onChange={e => setFilter('type', e.target.value)}>
                 <option value="">{fl('allTypes', lang)}</option>
                 <option value="villa">{fl('villa', lang)}</option>
@@ -173,53 +187,54 @@ export default function BiensPage() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">{fl('district', lang)}</label>
+              <label className="block text-[10px] tracking-widest text-gray-400 uppercase mb-1.5">{fl('district', lang)}</label>
               <select className={inp} value={filters.district} onChange={e => { setFilter('district', e.target.value); setFilter('concelho', ''); setFilter('freguesia', '') }}>
                 <option value="">—</option>
                 {districts.map(d => <option key={d} value={d}>{d}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">{fl('concelho', lang)}</label>
+              <label className="block text-[10px] tracking-widest text-gray-400 uppercase mb-1.5">{fl('concelho', lang)}</label>
               <select className={inp} value={filters.concelho} onChange={e => { setFilter('concelho', e.target.value); setFilter('freguesia', '') }}>
                 <option value="">—</option>
                 {concelhos.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">{fl('freguesia', lang)}</label>
+              <label className="block text-[10px] tracking-widest text-gray-400 uppercase mb-1.5">{fl('freguesia', lang)}</label>
               <select className={inp} value={filters.freguesia} onChange={e => setFilter('freguesia', e.target.value)}>
                 <option value="">—</option>
                 {freguesias.map(f => <option key={f} value={f}>{f}</option>)}
               </select>
             </div>
           </div>
-          <div className="flex flex-wrap gap-3 items-end">
+          <div className="flex flex-wrap gap-4 items-end">
             <div className="flex-1 min-w-[100px]">
-              <label className="block text-xs font-medium text-gray-500 mb-1">{fl('bedrooms', lang)}</label>
+              <label className="block text-[10px] tracking-widest text-gray-400 uppercase mb-1.5">{fl('bedrooms', lang)}</label>
               <select className={inp} value={filters.bedrooms} onChange={e => setFilter('bedrooms', e.target.value)}>
                 <option value="">{fl('allBeds', lang)}</option>
                 {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}+</option>)}
               </select>
             </div>
             <div className="flex-1 min-w-[110px]">
-              <label className="block text-xs font-medium text-gray-500 mb-1">{fl('minArea', lang)}</label>
+              <label className="block text-[10px] tracking-widest text-gray-400 uppercase mb-1.5">{fl('minArea', lang)}</label>
               <input className={inp} type="number" value={filters.minArea} onChange={e => setFilter('minArea', e.target.value)} placeholder="Ex: 100" />
             </div>
             <div className="flex-1 min-w-[110px]">
-              <label className="block text-xs font-medium text-gray-500 mb-1">{fl('maxArea', lang)}</label>
+              <label className="block text-[10px] tracking-widest text-gray-400 uppercase mb-1.5">{fl('maxArea', lang)}</label>
               <input className={inp} type="number" value={filters.maxArea} onChange={e => setFilter('maxArea', e.target.value)} placeholder="Ex: 500" />
             </div>
             <div className="flex-1 min-w-[130px]">
-              <label className="block text-xs font-medium text-gray-500 mb-1">{fl('minPrice', lang)}</label>
+              <label className="block text-[10px] tracking-widest text-gray-400 uppercase mb-1.5">{fl('minPrice', lang)}</label>
               <input className={inp} type="number" value={filters.minPrice} onChange={e => setFilter('minPrice', e.target.value)} placeholder="Ex: 100 000" />
             </div>
             <div className="flex-1 min-w-[130px]">
-              <label className="block text-xs font-medium text-gray-500 mb-1">{fl('maxPrice', lang)}</label>
+              <label className="block text-[10px] tracking-widest text-gray-400 uppercase mb-1.5">{fl('maxPrice', lang)}</label>
               <input className={inp} type="number" value={filters.maxPrice} onChange={e => setFilter('maxPrice', e.target.value)} placeholder="Ex: 500 000" />
             </div>
             {hasFilters && (
-              <button onClick={resetFilters} className="bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors whitespace-nowrap">
+              <button onClick={resetFilters}
+                className="border border-orange-400 text-orange-500 hover:bg-orange-500 hover:text-white text-[11px] tracking-widest uppercase px-5 py-2.5 transition-colors whitespace-nowrap">
                 ✕ {fl('reset', lang)}
               </button>
             )}
@@ -227,44 +242,40 @@ export default function BiensPage() {
         </div>
       </div>
 
-      {/* Biens */}
-      <div className="max-w-6xl mx-auto px-6 py-10">
-        {loading ? (
-          <div className="text-center py-20 text-gray-400">
-            <div className="w-8 h-8 border-2 border-orange-400 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-            <p className="text-sm">Chargement...</p>
-          </div>
-        ) : (
-          <>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900">
-                <span className="text-orange-500">{filtered.length}</span> {fl('properties', lang)}
-                {hasFilters && properties.filter(p => !p.is_offmarket).length !== filtered.length && (
-                  <span className="text-gray-400 font-normal text-base"> / {properties.filter(p => !p.is_offmarket).length}</span>
-                )}
-              </h2>
+      {/* Grille */}
+      <div className="bg-white px-6 py-12">
+        <div className="max-w-7xl mx-auto">
+          {loading ? (
+            <div className="text-center py-24 text-gray-300">
+              <div className="w-8 h-8 border border-orange-300 border-t-orange-500 rounded-full animate-spin mx-auto mb-4" />
+              <p className="text-xs tracking-widest uppercase text-gray-300">Chargement</p>
             </div>
-
-            {filtered.length === 0 ? (
-              <div className="text-center py-16 text-gray-400">
-                <p className="text-4xl mb-3">🔍</p>
-                <p>{fl('noResult', lang)}</p>
-                {hasFilters && (
-                  <button onClick={resetFilters} className="mt-4 text-orange-500 hover:underline text-sm font-medium">
-                    {fl('reset', lang)}
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filtered.map(p => (
-                  <PropertyCard key={p.id} p={p} lang={lang} onOpen={() => setSelected(p)} />
-                ))}
-              </div>
-            )}
-          </>
-        )}
+          ) : filtered.length === 0 ? (
+            <div className="text-center py-20">
+              <p className="text-xs tracking-widest uppercase text-gray-300 mb-3">Aucun résultat</p>
+              <p className="text-sm text-gray-400">{fl('noResult', lang)}</p>
+              {hasFilters && (
+                <button onClick={resetFilters} className="mt-6 text-[11px] tracking-widest uppercase text-orange-500 hover:underline">
+                  {fl('reset', lang)}
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {filtered.map(p => (
+                <PropertyCard key={p.id} p={p} lang={lang} onOpen={() => setSelected(p)} />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Footer */}
+      <footer className="border-t border-gray-100 py-8 px-6 text-center">
+        <div className="text-[10px] tracking-[0.2em] text-gray-300 uppercase">
+          Habiteo · Algarve Portugal · e-mo-tec.com
+        </div>
+      </footer>
 
       {selected && (
         <PropertyModal
