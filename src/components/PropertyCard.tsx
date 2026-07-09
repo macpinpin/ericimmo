@@ -349,7 +349,6 @@ export function PropertyModal({
           </div>
           <button onClick={() => { setShowContact(v => !v); setShowShare(false) }}
             className="flex-1 flex items-center justify-center gap-1.5 bg-orange-500 hover:bg-orange-600 text-white py-2.5 text-xs tracking-widest uppercase font-medium rounded-xl transition-colors">
-            <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
             <span>{t('contact', lang)}</span>
           </button>
           <a href={`https://wa.me/${agent.whatsapp}?text=${encodeURIComponent(p.title + ' ' + shareUrl)}`} target="_blank" rel="noopener"
