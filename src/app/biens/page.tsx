@@ -255,14 +255,14 @@ export default function BiensPage() {
               )}
             </div>
           ) : (
-            <p className="text-[11px] tracking-widest uppercase text-gray-400 mb-6">
+            <><p className="text-[11px] tracking-widest uppercase text-gray-400 mb-6">
               <span className="text-orange-400 font-medium">{filtered.length}</span> {fl('properties', lang)}
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {filtered.map(p => (
                 <PropertyCard key={p.id} p={p} lang={lang} onOpen={() => setSelected(p)} />
               ))}
-            </div>
+            </div></>
           )}
         </div>
       </div>
