@@ -125,7 +125,7 @@ export default function BiensPage() {
       <header className="bg-gray-900 px-8 py-10 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex flex-col items-start">
-            <svg width="220" height="179" viewBox="0 0 300 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg width="400" height="213" viewBox="0 88 300 152" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M 93.4 108.4 A 80 80 0 0 1 206.6 108.4" stroke="#777777" strokeWidth="2.5" strokeLinecap="round"/>
               <path d="M 111.8 126.8 A 54 54 0 0 1 188.2 126.8" stroke="#FFFFFF" strokeWidth="3" strokeLinecap="round"/>
               <path d="M 130.2 145.2 A 28 28 0 0 1 169.8 145.2" stroke="#F97316" strokeWidth="4" strokeLinecap="round"/>
@@ -255,16 +255,14 @@ export default function BiensPage() {
               )}
             </div>
           ) : (
-            <>
-              <p className="text-[11px] tracking-widest uppercase text-gray-400 mb-6">
-                <span className="text-orange-400 font-medium">{filtered.length}</span> {fl('properties', lang)}
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {filtered.map(p => (
-                  <PropertyCard key={p.id} p={p} lang={lang} onOpen={() => setSelected(p)} />
-                ))}
-              </div>
-            </>
+            <p className="text-[11px] tracking-widest uppercase text-gray-400 mb-6">
+              <span className="text-orange-400 font-medium">{filtered.length}</span> {fl('properties', lang)}
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {filtered.map(p => (
+                <PropertyCard key={p.id} p={p} lang={lang} onOpen={() => setSelected(p)} />
+              ))}
+            </div>
           )}
         </div>
       </div>
