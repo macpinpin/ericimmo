@@ -29,7 +29,7 @@ export function PropertyCard({ p, lang, onOpen }: { p: Property; lang: Lang; onO
   }
 
   return (
-    <div onClick={onOpen} className="bg-white border border-gray-100 overflow-hidden hover:border-gray-300 hover:shadow-lg transition-all duration-300 cursor-pointer group">
+    <div onClick={onOpen} className="bg-white border border-gray-100 rounded-2xl overflow-hidden hover:border-gray-300 hover:shadow-lg transition-all duration-300 cursor-pointer group">
 
       {/* Photo */}
       <div className="relative aspect-video bg-gray-100 overflow-hidden"
@@ -238,7 +238,7 @@ export function PropertyModal({
       <FullscreenGallery images={p.images} startIdx={imgIdx} onClose={() => setFullscreen(false)} />
     )}
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
+      <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
 
         {/* Photo principale */}
         <div className="relative aspect-video bg-black overflow-hidden"
@@ -300,21 +300,21 @@ export function PropertyModal({
           {p.matterport_url && (
             <button
               onClick={() => { setShowVtour(v => !v); setShowVideo(false) }}
-              className={`flex-1 text-center py-2.5 text-xs tracking-widest uppercase font-medium transition-colors ${showVtour ? 'bg-gray-800 text-white' : 'border border-gray-800 text-gray-800 hover:bg-gray-800 hover:text-white'}`}>
+              className={`flex-1 text-center py-2.5 text-xs tracking-widest uppercase font-medium rounded-xl transition-colors ${showVtour ? 'bg-gray-800 text-white' : 'border border-gray-800 text-gray-800 hover:bg-gray-800 hover:text-white'}`}>
               {showVtour ? 'Photos' : t('vtour', lang)}
             </button>
           )}
           {youtubeId && (
             <button
               onClick={() => { setShowVideo(v => !v); setShowVtour(false) }}
-              className={`flex-1 text-center py-2.5 text-xs tracking-widest uppercase font-medium transition-colors ${showVideo ? 'bg-gray-800 text-white' : 'border border-gray-800 text-gray-800 hover:bg-gray-800 hover:text-white'}`}>
+              className={`flex-1 text-center py-2.5 text-xs tracking-widest uppercase font-medium rounded-xl transition-colors ${showVideo ? 'bg-gray-800 text-white' : 'border border-gray-800 text-gray-800 hover:bg-gray-800 hover:text-white'}`}>
               {showVideo ? 'Photos' : 'Vidéo'}
             </button>
           )}
           <div className="relative flex-1">
             <button
               onClick={() => setShowShare(v => !v)}
-              className="w-full py-2.5 text-xs tracking-widest uppercase font-medium border border-gray-200 text-gray-500 hover:border-gray-800 hover:text-gray-800 transition-colors">
+              className="w-full py-2.5 text-xs tracking-widest uppercase font-medium rounded-xl border border-gray-200 text-gray-500 hover:border-gray-800 hover:text-gray-800 transition-colors">
               Partager
             </button>
             {showShare && (
@@ -345,11 +345,11 @@ export function PropertyModal({
             )}
           </div>
           <button onClick={() => { setShowContact(v => !v); setShowShare(false) }}
-            className="flex-1 text-center bg-orange-500 hover:bg-orange-600 text-white py-2.5 text-xs tracking-widest uppercase font-medium transition-colors">
+            className="flex-1 text-center bg-orange-500 hover:bg-orange-600 text-white py-2.5 text-xs tracking-widest uppercase font-medium rounded-xl transition-colors">
             {t('contact', lang)}
           </button>
           <a href={`https://wa.me/${agent.whatsapp}?text=${encodeURIComponent(p.title + ' ' + shareUrl)}`} target="_blank" rel="noopener"
-            className="flex-1 text-center bg-green-500 hover:bg-green-600 text-white py-2.5 text-xs tracking-widest uppercase font-medium transition-colors">
+            className="flex-1 text-center bg-green-500 hover:bg-green-600 text-white py-2.5 text-xs tracking-widest uppercase font-medium rounded-xl transition-colors">
             WhatsApp
           </a>
         </div>
