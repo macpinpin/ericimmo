@@ -122,11 +122,11 @@ export default function BiensPage() {
     <main className="min-h-screen bg-white">
 
       {/* Header */}
-      <header className="bg-gray-900 px-8 py-8 sticky top-0 z-40">
+      <header className="bg-gray-900 px-8 py-10 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div>
-            <div className="text-4xl font-semibold tracking-[0.2em] text-white">HABITEO</div>
-            <div className="text-[11px] tracking-[0.2em] text-orange-500 mt-1.5 uppercase">
+            <div className="text-6xl font-semibold tracking-[0.2em] text-white">HABITEO</div>
+            <div className="text-[11px] tracking-[0.2em] text-orange-500 mt-2 uppercase">
               {!loading && (
                 <><span className="text-orange-400 font-medium">{filtered.length}</span> {fl('properties', lang)}</>
               )}
