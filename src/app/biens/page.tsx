@@ -124,9 +124,19 @@ export default function BiensPage() {
       {/* Header */}
       <header className="bg-gray-900 px-8 py-10 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div>
-            <div className="text-6xl font-semibold tracking-[0.2em] text-white">HABITEO</div>
-            <div className="text-[11px] tracking-[0.2em] text-orange-500 mt-2 uppercase">
+          <div className="flex flex-col items-start">
+            <svg width="160" height="130" viewBox="0 0 300 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M 93.4 108.4 A 80 80 0 0 1 206.6 108.4" stroke="#777777" strokeWidth="2.5" strokeLinecap="round"/>
+              <path d="M 111.8 126.8 A 54 54 0 0 1 188.2 126.8" stroke="#FFFFFF" strokeWidth="3" strokeLinecap="round"/>
+              <path d="M 130.2 145.2 A 28 28 0 0 1 169.8 145.2" stroke="#F97316" strokeWidth="4" strokeLinecap="round"/>
+              <circle cx="150" cy="165" r="13" stroke="#FFFFFF" strokeWidth="2.5"/>
+              <circle cx="150" cy="165" r="5" fill="#F97316"/>
+              <text x="150" y="210" textAnchor="middle" fontFamily="system-ui, sans-serif" fontSize="26" letterSpacing="0.5">
+                <tspan fontWeight="700" fill="#F97316">e</tspan>
+                <tspan fontWeight="200" fill="#FFFFFF">-nestwork</tspan>
+              </text>
+            </svg>
+            <div className="text-[10px] tracking-[0.2em] text-orange-500 mt-1 uppercase">
               {!loading && (
                 <><span className="text-orange-400 font-medium">{filtered.length}</span> {fl('properties', lang)}</>
               )}
