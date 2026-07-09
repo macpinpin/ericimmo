@@ -122,23 +122,27 @@ export default function BiensPage() {
     <main className="min-h-screen bg-white">
 
       {/* Header */}
-      <header className="bg-white border-b border-gray-100 px-6 py-5 sticky top-0 z-40">
+      <header className="bg-gray-900 px-6 py-5 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div>
-            <div className="text-2xl font-semibold tracking-[0.15em] text-gray-900">HABITEO</div>
-            <div className="text-[10px] tracking-[0.2em] text-orange-500 mt-0.5 uppercase">{fl('subtitle', lang)}</div>
+            <div className="text-2xl font-semibold tracking-[0.15em] text-white">HABITEO</div>
+            <div className="text-[10px] tracking-[0.2em] text-orange-500 mt-0.5 uppercase">
+              {!loading && (
+                <><span className="text-orange-400 font-medium">{filtered.length}</span> {fl('properties', lang)}</>
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-4">
             <a href="/dashboard"
-              className="text-[11px] tracking-widest text-gray-400 hover:text-gray-900 transition-colors uppercase border border-gray-200 hover:border-gray-800 px-4 py-2">
+              className="text-[11px] tracking-widest text-gray-400 hover:text-white transition-colors uppercase border border-gray-700 hover:border-gray-400 px-4 py-2">
               Espace agent
             </a>
             <div className="relative">
               <button onClick={() => setLangOpen(o => !o)}
-                className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors border border-gray-200 hover:border-gray-400 px-3 py-2">
+                className="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition-colors border border-gray-700 hover:border-gray-400 px-3 py-2">
                 <span>{currentLang.flag}</span>
                 <span className="text-[11px] tracking-widest uppercase hidden sm:inline">{currentLang.label}</span>
-                <span className="text-[10px] text-gray-400">▾</span>
+                <span className="text-[10px] text-gray-500">▾</span>
               </button>
               {langOpen && (
                 <div className="absolute right-0 top-full mt-1 bg-white border border-gray-100 shadow-xl z-50 grid grid-cols-2 w-44">
@@ -154,22 +158,6 @@ export default function BiensPage() {
           </div>
         </div>
       </header>
-
-      {/* Hero strip */}
-      <div className="bg-white px-6 py-10 border-b border-gray-100">
-        <div className="max-w-7xl mx-auto">
-          <p className="text-[11px] tracking-[0.25em] text-orange-500 uppercase mb-3">Algarve · Portugal</p>
-          <h1 className="text-3xl font-light text-gray-900 tracking-tight mb-2">Biens d&apos;exception</h1>
-          {!loading && (
-            <p className="text-sm text-gray-400">
-              <span className="text-orange-500 font-medium">{filtered.length}</span> {fl('properties', lang)}
-              {hasFilters && properties.filter(p => !p.is_offmarket).length !== filtered.length && (
-                <span className="text-gray-300"> / {properties.filter(p => !p.is_offmarket).length}</span>
-              )}
-            </p>
-          )}
-        </div>
-      </div>
 
       {/* Filtres */}
       <div className="bg-gray-50 border-b border-gray-100 px-6 py-6">
