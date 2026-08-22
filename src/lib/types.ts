@@ -27,6 +27,9 @@ export type Buyer = {
   id: string
   agent_id: string
   name: string
+  first_name: string | null
+  last_name: string | null
+  company: string | null
   email: string | null
   phone: string | null
   nationality: string | null
