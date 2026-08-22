@@ -17,7 +17,9 @@ const NATIONALITIES = ['Portugaise', 'Française', 'Britannique', 'Allemande', '
 
 export default function BuyerForm({ agentId, buyer, onSaved, onClose }: Props) {
   const [form, setForm] = useState({
-    name: buyer?.name || '',
+    first_name: buyer?.first_name || '',
+    last_name: buyer?.last_name || '',
+    company: buyer?.company || '',
     email: buyer?.email || '',
     phone: buyer?.phone || '',
     nationality: buyer?.nationality || '',
@@ -50,9 +52,14 @@ export default function BuyerForm({ agentId, buyer, onSaved, onClose }: Props) {
     setLoading(true)
     setError('')
 
+    const fullName = [form.first_name, form.last_name].filter(Boolean).join(' ')
+
     const payload = {
       agent_id: agentId,
-      name: form.name,
+      name: fullName,
+      first_name: form.first_name || null,
+      last_name: form.last_name || null,
+      company: form.company || null,
       email: form.email || null,
       phone: form.phone || null,
       nationality: form.nationality || null,
@@ -94,7 +101,7 @@ export default function BuyerForm({ agentId, buyer, onSaved, onClose }: Props) {
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl my-8">
         <div className="flex items-center justify-between p-6 border-b border-gray-100">
           <h2 className="text-lg font-bold text-gray-900">
-            {buyer ? 'Modifier l\'acheteur' : 'Ajouter un acheteur'}
+            {buyer ? "Modifier l'acheteur" : 'Ajouter un acheteur'}
           </h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
         </div>
@@ -126,15 +133,29 @@ export default function BuyerForm({ agentId, buyer, onSaved, onClose }: Props) {
           <p className={section}>Coordonnées</p>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className={lbl}>Nom complet *</label>
-              <input className={inp} value={form.name} onChange={e => set('name', e.target.value)} required placeholder="Jean Dupont" />
+              <label className={lbl}>Prénom *</label>
+              <input className={inp} value={form.first_name} onChange={e => set('first_name', e.target.value)} required placeholder="Jean" />
             </div>
+            <div>
+              <label className={lbl}>Nom *</label>
+              <input className={inp} value={form.last_name} onChange={e => set('last_name', e.target.value)} required placeholder="Dupont" />
+            </div>
+          </div>
+          <div>
+            <label className={lbl}>Société</label>
+            <input className={inp} value={form.company} onChange={e => set('company', e.target.value)} placeholder="Nom de la société (optionnel)" />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className={lbl}>Nationalité</label>
               <select className={inp} value={form.nationality} onChange={e => set('nationality', e.target.value)}>
                 <option value="">—</option>
                 {NATIONALITIES.map(n => <option key={n} value={n}>{n}</option>)}
               </select>
+            </div>
+            <div>
+              <label className={lbl}>Date de naissance</label>
+              <input className={inp} type="date" value={form.birthday} onChange={e => set('birthday', e.target.value)} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -149,22 +170,18 @@ export default function BuyerForm({ agentId, buyer, onSaved, onClose }: Props) {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className={lbl}>Date de naissance</label>
-              <input className={inp} type="date" value={form.birthday} onChange={e => set('birthday', e.target.value)} />
-            </div>
-            <div>
               <label className={lbl}>Source</label>
               <select className={inp} value={form.source} onChange={e => set('source', e.target.value)}>
                 <option value="">—</option>
                 {SOURCES.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className={lbl}>1er contact</label>
               <input className={inp} type="date" value={form.first_contact} onChange={e => set('first_contact', e.target.value)} />
             </div>
+          </div>
+          <div className="grid grid-cols-1 gap-4">
             <div>
               <label className={lbl}>Dernier contact</label>
               <input className={inp} type="date" value={form.last_contact} onChange={e => set('last_contact', e.target.value)} />
@@ -214,7 +231,7 @@ export default function BuyerForm({ agentId, buyer, onSaved, onClose }: Props) {
             </div>
           </div>
 
-          {/* Localisation souhaitée */}
+          {/* Localisation */}
           <div className="grid grid-cols-3 gap-4">
             <div>
               <label className={lbl}>District</label>
@@ -248,7 +265,7 @@ export default function BuyerForm({ agentId, buyer, onSaved, onClose }: Props) {
           <div className="flex gap-3 pt-2">
             <button type="submit" disabled={loading}
               className="flex-1 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition-colors">
-              {loading ? 'Enregistrement…' : buyer ? 'Enregistrer' : 'Ajouter l\'acheteur'}
+              {loading ? 'Enregistrement…' : buyer ? 'Enregistrer' : "Ajouter l'acheteur"}
             </button>
             <button type="button" onClick={onClose} className="px-6 py-3 border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 transition-colors">
               Annuler
