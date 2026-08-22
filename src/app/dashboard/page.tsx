@@ -491,9 +491,9 @@ export default function DashboardPage() {
   }
 
   async function exportToVCard(b: Buyer) {
-    const nameParts = b.name.trim().split(' ')
-    const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : ''
-    const firstName = nameParts.length > 1 ? nameParts.slice(0, -1).join(' ') : b.name
+    const firstName = b.first_name || b.name.split(' ').slice(0, -1).join(' ') || b.name
+    const lastName = b.last_name || (b.name.split(' ').length > 1 ? b.name.split(' ').slice(-1)[0] : '')
+    const fullName = [firstName, lastName].filter(Boolean).join(' ')
     const now = new Date().toISOString()
     const notesParts = [
       b.source ? `Raison du contact: ${b.source}` : '',
@@ -503,8 +503,9 @@ export default function DashboardPage() {
       'BEGIN:VCARD',
       'VERSION:3.0',
       `UID:enestwork-${b.id}`,
-      `FN:${b.name}`,
+      `FN:${fullName}`,
       `N:${lastName};${firstName};;;`,
+      b.company ? `ORG:${b.company}` : '',
       b.phone ? `TEL;TYPE=CELL:${b.phone}` : '',
       b.email ? `EMAIL:${b.email}` : '',
       notesParts ? `NOTE:${notesParts}` : '',
@@ -737,7 +738,10 @@ export default function DashboardPage() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <h3 className="font-semibold text-gray-900">{b.name}</h3>
+                            <h3 className="font-semibold text-gray-900">
+                              {b.first_name || b.last_name ? <>{b.first_name} <span className="font-bold">{b.last_name}</span></> : b.name}
+                            </h3>
+                            {b.company && <span className="text-xs text-gray-400 italic">{b.company}</span>}
                             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_CONFIG[b.status].bg}`}>
                               {STATUS_CONFIG[b.status].label}
                             </span>
@@ -765,13 +769,10 @@ export default function DashboardPage() {
                         <div className="flex items-center gap-2 flex-shrink-0">
                           <button
                             onClick={() => exportToVCard(b)}
-                            title={b.contact_synced_at ? 'Cliquer pour resynchroniser' : 'Exporter vers Contacts iPhone/Mac'}
-                            className="text-sm px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors flex flex-col items-center">
-                            <span className="flex items-center gap-1">
-                              <span>{b.contact_synced_at ? '✅' : '📇'}</span>
-                              <span className="text-gray-400 hidden sm:inline">{b.contact_synced_at ? 'Synced' : 'Contacts'}</span>
-                            </span>
-                            {b.contact_synced_at && <span className="text-[10px] text-gray-300">{new Date(b.contact_synced_at).toLocaleDateString('fr-FR')}</span>}
+                            title={b.contact_synced_at ? `Mis à jour le ${new Date(b.contact_synced_at).toLocaleDateString('fr-FR')} — cliquer pour resynchroniser` : 'Exporter vers Contacts iPhone/Mac'}
+                            className="text-sm px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-1">
+                            <span>{b.contact_synced_at ? '✅' : '📇'}</span>
+                            <span className="text-gray-400 hidden sm:inline">{b.contact_synced_at ? 'Synced' : 'Contacts'}</span>
                           </button>
                           <button onClick={() => { setEditBuyer(b); setShowBuyerForm(true) }} className="text-sm text-gray-400 hover:text-gray-700 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors">Modifier</button>
                           <button onClick={() => deleteBuyer(b.id)} className="text-sm text-red-400 hover:text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors">Supprimer</button>
