@@ -45,6 +45,7 @@ export type Buyer = {
   notes: string | null
   first_contact: string | null
   last_contact: string | null
+  contact_synced_at: string | null
   created_at: string
 }
 
