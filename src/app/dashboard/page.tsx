@@ -490,6 +490,41 @@ export default function DashboardPage() {
     setBuyers(prev => prev.filter(b => b.id !== id))
   }
 
+  async function exportToVCard(b: Buyer) {
+    const nameParts = b.name.trim().split(' ')
+    const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : ''
+    const firstName = nameParts.length > 1 ? nameParts.slice(0, -1).join(' ') : b.name
+    const now = new Date().toISOString()
+    const notesParts = [
+      b.source ? `Raison du contact: ${b.source}` : '',
+      b.notes ? b.notes : '',
+    ].filter(Boolean).join(' | ')
+    const lines = [
+      'BEGIN:VCARD',
+      'VERSION:3.0',
+      `UID:enestwork-${b.id}`,
+      `FN:${b.name}`,
+      `N:${lastName};${firstName};;;`,
+      b.phone ? `TEL;TYPE=CELL:${b.phone}` : '',
+      b.email ? `EMAIL:${b.email}` : '',
+      notesParts ? `NOTE:${notesParts}` : '',
+      'CATEGORIES:e-nestwork',
+      `REV:${now.replace(/[-:]/g, '').split('.')[0]}Z`,
+      'END:VCARD',
+    ].filter(Boolean).join('\r\n')
+    const blob = new Blob([lines], { type: 'text/vcard;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${b.name.replace(/\s+/g, '_')}.vcf`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    const { data } = await supabase.from('buyers').update({ contact_synced_at: now }).eq('id', b.id).select().single()
+    if (data) setBuyers(prev => prev.map(x => x.id === b.id ? { ...x, contact_synced_at: now } : x))
+  }
+
   async function handleLogout() {
     await supabase.auth.signOut()
     router.push('/login')
@@ -728,6 +763,13 @@ export default function DashboardPage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
+                          <button
+                            onClick={() => exportToVCard(b)}
+                            title={b.contact_synced_at ? `Mis à jour le ${new Date(b.contact_synced_at).toLocaleDateString('fr-FR')} — cliquer pour resynchroniser` : 'Exporter vers Contacts iPhone/Mac'}
+                            className="text-sm px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-1">
+                            <span>{b.contact_synced_at ? '✅' : '📇'}</span>
+                            <span className="text-gray-400 hidden sm:inline">{b.contact_synced_at ? 'Synced' : 'Contacts'}</span>
+                          </button>
                           <button onClick={() => { setEditBuyer(b); setShowBuyerForm(true) }} className="text-sm text-gray-400 hover:text-gray-700 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors">Modifier</button>
                           <button onClick={() => deleteBuyer(b.id)} className="text-sm text-red-400 hover:text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors">Supprimer</button>
                         </div>
