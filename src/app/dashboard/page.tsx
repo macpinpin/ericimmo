@@ -769,10 +769,13 @@ export default function DashboardPage() {
                         <div className="flex items-center gap-2 flex-shrink-0">
                           <button
                             onClick={() => exportToVCard(b)}
-                            title={b.contact_synced_at ? `Mis à jour le ${new Date(b.contact_synced_at).toLocaleDateString('fr-FR')} — cliquer pour resynchroniser` : 'Exporter vers Contacts iPhone/Mac'}
-                            className="text-sm px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-1">
-                            <span>{b.contact_synced_at ? '✅' : '📇'}</span>
-                            <span className="text-gray-400 hidden sm:inline">{b.contact_synced_at ? 'Synced' : 'Contacts'}</span>
+                            title={b.contact_synced_at ? 'Cliquer pour resynchroniser' : 'Exporter vers Contacts iPhone/Mac'}
+                            className="text-sm px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors flex flex-col items-center">
+                            <span className="flex items-center gap-1">
+                              <span>{b.contact_synced_at ? '✅' : '📇'}</span>
+                              <span className="text-gray-400 hidden sm:inline">{b.contact_synced_at ? 'Synced' : 'Contacts'}</span>
+                            </span>
+                            {b.contact_synced_at && <span className="text-[10px] text-gray-300">{new Date(b.contact_synced_at).toLocaleDateString('fr-FR')}</span>}
                           </button>
                           <button onClick={() => { setEditBuyer(b); setShowBuyerForm(true) }} className="text-sm text-gray-400 hover:text-gray-700 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors">Modifier</button>
                           <button onClick={() => deleteBuyer(b.id)} className="text-sm text-red-400 hover:text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors">Supprimer</button>
