@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { Colleague, Property } from '@/lib/types'
-import { getDistricts } from '@/lib/portugal'
+import { getDistricts, getConcelhos } from '@/lib/portugal'
 
 type Props = {
   agentId: string
@@ -25,6 +25,7 @@ export default function ColleagueForm({ agentId, colleague, properties, onSaved,
     phone: colleague?.phone || '',
     email: colleague?.email || '',
     district: colleague?.district || '',
+    concelho: colleague?.concelho || '',
     specialty: colleague?.specialty || '',
     property_id: colleague?.property_id || '',
     notes: colleague?.notes || '',
@@ -51,6 +52,7 @@ export default function ColleagueForm({ agentId, colleague, properties, onSaved,
       phone: form.phone || null,
       email: form.email || null,
       district: form.district || null,
+      concelho: form.concelho || null,
       specialty: form.specialty || null,
       property_id: form.property_id || null,
       notes: form.notes || null,
@@ -124,12 +126,21 @@ export default function ColleagueForm({ agentId, colleague, properties, onSaved,
           <p className={section}>Activité</p>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className={lbl}>Zone de travail</label>
-              <select className={inp} value={form.district} onChange={e => set('district', e.target.value)}>
-                <option value="">— Tous —</option>
+              <label className={lbl}>Province</label>
+              <select className={inp} value={form.district} onChange={e => { set('district', e.target.value); set('concelho', '') }}>
+                <option value="">— Toutes —</option>
                 {getDistricts().map(d => <option key={d} value={d}>{d}</option>)}
               </select>
             </div>
+            <div>
+              <label className={lbl}>Commune</label>
+              <select className={inp} value={form.concelho} onChange={e => set('concelho', e.target.value)} disabled={!form.district}>
+                <option value="">— Toutes —</option>
+                {getConcelhos(form.district).map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className={lbl}>Spécialité</label>
               <select className={inp} value={form.specialty} onChange={e => set('specialty', e.target.value)}>
