@@ -1070,7 +1070,7 @@ export default function DashboardPage() {
       )}
       {showColleagueForm && (
         <ColleagueForm
-          agentId={userId!}
+          agentId={user!.id}
           colleague={editColleague}
           properties={properties}
           onSaved={handleColleagueSaved}
