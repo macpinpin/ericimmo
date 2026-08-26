@@ -3,9 +3,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
-import type { Property, Buyer, Match } from '@/lib/types'
+import type { Property, Buyer, Match, Colleague } from '@/lib/types'
 import PropertyForm from './PropertyForm'
 import BuyerForm from './BuyerForm'
+import ColleagueForm from './ColleagueForm'
 
 const STATUS_CONFIG = {
   hot:  { label: '🔴 Chaud', bg: 'bg-red-50 text-red-600' },
@@ -405,7 +406,7 @@ export default function DashboardPage() {
   const router = useRouter()
   const [user, setUser] = useState<{ id: string; email: string } | null>(null)
   const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState<'properties' | 'buyers' | 'matches' | 'invite' | 'profile'>('properties')
+  const [tab, setTab] = useState<'properties' | 'buyers' | 'colleagues' | 'matches' | 'invite' | 'profile'>('properties')
   const [agentSlug, setAgentSlug] = useState<string | null>(null)
   const [profileComplete, setProfileComplete] = useState(true)
   const isAdmin = user?.email === 'macpinpin@me.com'
@@ -418,6 +419,9 @@ export default function DashboardPage() {
   const [showBuyerForm, setShowBuyerForm] = useState(false)
   const [editBuyer, setEditBuyer] = useState<Buyer | null>(null)
   const [buyerFilter, setBuyerFilter] = useState<'all' | 'hot' | 'warm' | 'cold'>('all')
+  const [colleagues, setColleagues] = useState<Colleague[]>([])
+  const [showColleagueForm, setShowColleagueForm] = useState(false)
+  const [editColleague, setEditColleague] = useState<Colleague | null>(null)
   const [expandedBuyer, setExpandedBuyer] = useState<string | null>(null)
 
   const [matches, setMatches] = useState<Match[]>([])
@@ -434,7 +438,7 @@ export default function DashboardPage() {
       if (data?.slug) setAgentSlug(data.slug)
       if (!data?.phone && !data?.bio && !data?.photo_url) setProfileComplete(false)
     })
-    await Promise.all([loadProperties(user.id), loadBuyers(user.id), loadMatches(user.id)])
+    await Promise.all([loadProperties(user.id), loadBuyers(user.id), loadMatches(user.id), loadColleagues(user.id)])
     setLoading(false)
   }
 
@@ -446,6 +450,11 @@ export default function DashboardPage() {
   async function loadBuyers(agentId: string) {
     const { data } = await supabase.from('buyers').select('*').eq('agent_id', agentId).order('last_contact', { ascending: false })
     setBuyers(data || [])
+  }
+
+  async function loadColleagues(agentId: string) {
+    const { data } = await supabase.from('colleagues').select('*').eq('agent_id', agentId).order('created_at', { ascending: false })
+    setColleagues(data || [])
   }
 
   async function loadMatches(agentId: string) {
@@ -524,6 +533,54 @@ export default function DashboardPage() {
     URL.revokeObjectURL(url)
     const { data } = await supabase.from('buyers').update({ contact_synced_at: now }).eq('id', b.id).select().single()
     if (data) setBuyers(prev => prev.map(x => x.id === b.id ? { ...x, contact_synced_at: now } : x))
+  }
+
+  async function deleteColleague(id: string) {
+    if (!confirm('Supprimer ce collègue ?')) return
+    await supabase.from('colleagues').delete().eq('id', id)
+    setColleagues(prev => prev.filter(c => c.id !== id))
+  }
+
+  async function exportColleagueVCard(c: Colleague) {
+    const now = new Date().toISOString()
+    const notesParts = [
+      c.specialty ? `Spécialité: ${c.specialty}` : '',
+      c.district ? `Zone: ${c.district}` : '',
+      c.notes || '',
+    ].filter(Boolean).join(' | ')
+    const lines = [
+      'BEGIN:VCARD',
+      'VERSION:3.0',
+      `UID:enestwork-colleague-${c.id}`,
+      `FN:${c.first_name} ${c.last_name}`,
+      `N:${c.last_name};${c.first_name};;;`,
+      c.title ? `TITLE:${c.title}` : '',
+      c.agency ? `ORG:${c.agency}` : '',
+      c.phone ? `TEL;TYPE=CELL:${c.phone}` : '',
+      c.email ? `EMAIL:${c.email}` : '',
+      notesParts ? `NOTE:${notesParts}` : '',
+      'CATEGORIES:e-nestwork,Collègues',
+      `REV:${now.replace(/[-:]/g, '').split('.')[0]}Z`,
+      'END:VCARD',
+    ].filter(Boolean).join('\r\n')
+    const blob = new Blob([lines], { type: 'text/vcard;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${c.first_name}_${c.last_name}.vcf`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    const { data } = await supabase.from('colleagues').update({ contact_synced_at: now }).eq('id', c.id).select().single()
+    if (data) setColleagues(prev => prev.map(x => x.id === c.id ? { ...x, contact_synced_at: now } : x))
+  }
+
+  function handleColleagueSaved(c: Colleague) {
+    if (editColleague) setColleagues(prev => prev.map(x => x.id === c.id ? c : x))
+    else setColleagues(prev => [c, ...prev])
+    setShowColleagueForm(false)
+    setEditColleague(null)
   }
 
   async function handleLogout() {
@@ -629,6 +686,10 @@ export default function DashboardPage() {
           <button onClick={() => setTab('buyers')}
             className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'buyers' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
             👤 Acheteurs ({buyers.length})
+          </button>
+          <button onClick={() => setTab('colleagues')}
+            className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'colleagues' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+            🤝 Collègues ({colleagues.length})
           </button>
           <button onClick={() => setTab('matches')}
             className={`relative px-5 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'matches' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
@@ -816,6 +877,71 @@ export default function DashboardPage() {
           </>
         )}
 
+        {/* ── Onglet Collègues ── */}
+        {tab === 'colleagues' && (
+          <>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">Collègues & Agents</h2>
+              <button onClick={() => { setEditColleague(null); setShowColleagueForm(true) }}
+                className="bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors">
+                + Ajouter un collègue
+              </button>
+            </div>
+            {colleagues.length === 0 ? (
+              <div className="text-center py-20">
+                <p className="text-4xl mb-3">🤝</p>
+                <p className="text-gray-400 text-sm">Aucun collègue pour l'instant</p>
+              </div>
+            ) : (
+              <div className="grid gap-3">
+                {colleagues.map(c => {
+                  const linkedProp = properties.find(p => p.id === c.property_id)
+                  return (
+                    <div key={c.id} className="bg-white rounded-xl border border-gray-100 p-5 flex items-center gap-5">
+                      <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm flex-shrink-0">
+                        {c.first_name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-semibold text-gray-900">{c.first_name} <span className="font-bold">{c.last_name}</span></h3>
+                          {c.title && <span className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-medium">{c.title}</span>}
+                          {c.agency && <span className="text-xs text-gray-400 italic">{c.agency}</span>}
+                        </div>
+                        <div className="flex gap-4 mt-1 text-xs text-gray-400 flex-wrap">
+                          {c.phone && <span>📞 {c.phone}</span>}
+                          {c.email && <span>✉️ {c.email}</span>}
+                          {c.district && <span>📍 {c.district}</span>}
+                          {c.specialty && <span>🏠 {c.specialty}</span>}
+                        </div>
+                        {linkedProp && (
+                          <div className="mt-1 text-xs text-orange-500 font-medium">
+                            🔗 {linkedProp.ref ? `[${linkedProp.ref}] ` : ''}{linkedProp.title}
+                          </div>
+                        )}
+                        {c.notes && <p className="mt-1 text-xs text-gray-400 truncate">{c.notes}</p>}
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <button
+                          onClick={() => exportColleagueVCard(c)}
+                          title={c.contact_synced_at ? 'Cliquer pour resynchroniser' : 'Exporter vers Contacts iPhone/Mac'}
+                          className="text-sm px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors flex flex-col items-center">
+                          <span className="flex items-center gap-1">
+                            <span>{c.contact_synced_at ? '✅' : '📇'}</span>
+                            <span className="text-gray-400 hidden sm:inline">{c.contact_synced_at ? 'Synced' : 'Contacts'}</span>
+                          </span>
+                          {c.contact_synced_at && <span className="text-[10px] text-gray-300">{new Date(c.contact_synced_at).toLocaleDateString('fr-FR')}</span>}
+                        </button>
+                        <button onClick={() => { setEditColleague(c); setShowColleagueForm(true) }} className="text-sm text-gray-400 hover:text-gray-700 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors">Modifier</button>
+                        <button onClick={() => deleteColleague(c.id)} className="text-sm text-red-400 hover:text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors">Supprimer</button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </>
+        )}
+
         {/* ── Onglet Matchs ── */}
         {tab === 'matches' && (
           <>
@@ -941,6 +1067,15 @@ export default function DashboardPage() {
 
       {showPropertyForm && (
         <PropertyForm agentId={user!.id} property={editProp} onSaved={handlePropertySaved} onClose={() => { setShowPropertyForm(false); setEditProp(null) }} />
+      )}
+      {showColleagueForm && (
+        <ColleagueForm
+          agentId={userId!}
+          colleague={editColleague}
+          properties={properties}
+          onSaved={handleColleagueSaved}
+          onClose={() => { setShowColleagueForm(false); setEditColleague(null) }}
+        />
       )}
       {showBuyerForm && (
         <BuyerForm agentId={user!.id} buyer={editBuyer} onSaved={handleBuyerSaved} onClose={() => { setShowBuyerForm(false); setEditBuyer(null) }} />
