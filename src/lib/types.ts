@@ -108,6 +108,7 @@ export type Colleague = {
   phone: string | null
   email: string | null
   district: string | null
+  concelho: string | null
   specialty: string | null
   property_id: string | null
   notes: string | null
