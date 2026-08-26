@@ -97,3 +97,20 @@ export type Property = {
   } | null
   created_at: string
 }
+
+export type Colleague = {
+  id: string
+  agent_id: string
+  first_name: string
+  last_name: string
+  title: string | null
+  agency: string | null
+  phone: string | null
+  email: string | null
+  district: string | null
+  specialty: string | null
+  property_id: string | null
+  notes: string | null
+  contact_synced_at: string | null
+  created_at: string
+}
