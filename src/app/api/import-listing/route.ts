@@ -140,10 +140,37 @@ function extractJsonLd(html: string): string {
   const blocks: string[] = []
   const re = /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi
   let m
-  while ((m = re.exec(html)) && blocks.length < 3) {
-    blocks.push(m[1].trim().slice(0, 2000))
+  while ((m = re.exec(html)) && blocks.length < 2) {
+    blocks.push(m[1].trim().slice(0, 4000))
   }
   return blocks.join('\n---\n')
+}
+
+// Beaucoup de portails modernes (Next.js, Nuxt...) embarquent les données complètes
+// de l'annonce en JSON dans la page — bien plus fiable que le texte visible, qui est
+// souvent tronqué/mis en page par du CSS avant d'atteindre le prix ou les surfaces.
+function extractEmbeddedState(html: string): string {
+  const blocks: string[] = []
+  const nextData = html.match(/<script[^>]+id=["']__NEXT_DATA__["'][^>]*>([\s\S]*?)<\/script>/i)
+  if (nextData) blocks.push(nextData[1].trim().slice(0, 6000))
+
+  const jsonScripts = /<script[^>]+type=["']application\/json["'][^>]*>([\s\S]*?)<\/script>/gi
+  let m
+  while ((m = jsonScripts.exec(html)) && blocks.length < 3) {
+    const chunk = m[1].trim()
+    if (chunk.length > 200) blocks.push(chunk.slice(0, 4000))
+  }
+  return blocks.join('\n---\n')
+}
+
+function extractImagesFromText(text: string, baseUrl: string): string[] {
+  const urls = new Set<string>()
+  const re = /https?:\/\/[^\s"'\\]+\.(?:jpg|jpeg|png|webp)(?:\?[^\s"'\\]*)?/gi
+  let m
+  while ((m = re.exec(text)) && urls.size < 60) {
+    try { urls.add(new URL(m[0], baseUrl).href) } catch { /* ignore invalid url */ }
+  }
+  return [...urls]
 }
 
 export async function POST(req: Request) {
@@ -163,8 +190,12 @@ export async function POST(req: Request) {
     const title = extractMeta(html, 'og:title') || (html.match(/<title>([\s\S]*?)<\/title>/i)?.[1] || '')
     const description = extractMeta(html, 'og:description') || extractMeta(html, 'description') || ''
     const jsonLd = extractJsonLd(html)
-    const bodyText = stripTags(html).slice(0, 5000)
-    const imageCandidates = extractImages(html, page.finalUrl)
+    const embeddedState = extractEmbeddedState(html)
+    const bodyText = stripTags(html).slice(0, 15000)
+    const imageCandidates = [
+      ...extractImages(html, page.finalUrl),
+      ...extractImagesFromText(embeddedState, page.finalUrl),
+    ]
     const districts = getDistricts()
 
     const prompt = `Tu es un assistant qui extrait les informations d'une annonce immobilière à partir du contenu brut d'une page web (portail immobilier). Réponds UNIQUEMENT en JSON valide, sans markdown, sans commentaire.
@@ -179,15 +210,17 @@ TITRE META: ${title}
 DESCRIPTION META: ${description}
 DONNÉES STRUCTURÉES (JSON-LD, peut être vide) :
 ${jsonLd || '(aucune)'}
+DONNÉES JSON EMBARQUÉES DANS LA PAGE (state de l'application, souvent la source la plus fiable pour le prix/surfaces/photos — peut être vide) :
+${embeddedState || '(aucune)'}
 TEXTE DE LA PAGE :
 ${bodyText}
 
-Retourne ce JSON exact (utilise null si une info est absente ou incertaine — n'invente rien) :
-{"title":"","description":"","price":0,"type":"villa","location":"","district":null,"bedrooms":null,"bathrooms":null,"area":null,"ref":null}
+Retourne ce JSON exact (utilise null si une info est vraiment absente ou incertaine — ne mets JAMAIS 0 par défaut pour le prix, cherche activement dans les 3 sources ci-dessus avant de conclure à null) :
+{"title":"","description":"","price":null,"type":"other","location":"","district":null,"bedrooms":null,"bathrooms":null,"area":null,"ref":null}
 
 - "title": titre court et propre de l'annonce
 - "description": 2 à 4 phrases en français, factuelles, résumant le bien (ne pas inventer de détails absents du texte)
-- "price": nombre uniquement, en euros, sans symbole ni séparateur (ex: 450000)
+- "price": nombre uniquement, en euros, sans symbole ni séparateur (ex: 450000) — regarde en priorité les données JSON embarquées et structurées, le prix y est presque toujours présent même s'il n'apparaît pas dans le texte visible tronqué
 - "location": la localisation telle qu'affichée sur l'annonce (ville/région)
 - "area": surface habitable en m², nombre uniquement
 - "ref": référence de l'annonce si visible sur le portail`
