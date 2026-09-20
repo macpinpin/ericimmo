@@ -50,6 +50,17 @@ create table public.properties (
   ref text,
   is_offmarket boolean not null default false,
   translations jsonb,
+  -- Faits légaux/administratifs du bien, utilisés dans le CMI (Contrato de
+  -- Mediação Imobiliária) — destinés à terme à être extraits automatiquement
+  -- des documents officiels (caderneta predial, certificado energético...).
+  matriz_artigo text,
+  conservatoria_registo text,
+  conservatoria_numero text,
+  certificado_energetico_numero text,
+  certificado_energetico_validade date,
+  licenca_numero text,
+  licenca_data date,
+  ano_construcao integer,
   created_at timestamptz default now()
 );
 
@@ -124,6 +135,46 @@ create table public.matches (
 );
 
 -- ============================================================
+-- PROPERTY_MANDATES — CMI (Contrato de Mediação Imobiliária) d'un bien.
+-- Données privées à l'agent (jamais publiques) : identité du/des
+-- propriétaire(s), conditions du mandat. Le texte légal du contrat est
+-- généré côté application à partir de ces données, pas stocké ici.
+-- ============================================================
+create table public.property_mandates (
+  id uuid default gen_random_uuid() primary key,
+  property_id uuid references public.properties(id) on delete cascade not null,
+  agent_id uuid references public.agents(id) on delete cascade not null,
+  contract_type text not null default 'exclusivo' check (contract_type in ('exclusivo','semi_exclusivo','nao_exclusivo')),
+  business_type text not null default 'compra' check (business_type in ('compra','trespasse','arrendamento')),
+  -- Propriétaire(s) — tableau d'objets (personne singulière ou collective),
+  -- structure volontairement souple (JSON) plutôt qu'une table dédiée : ces
+  -- champs sont saisis une fois puis figés dans le PDF généré, jamais
+  -- requêtés individuellement.
+  owners jsonb not null default '[]'::jsonb,
+  price numeric,
+  additional_service_fee numeric,
+  liens_free boolean not null default true,
+  liens_description text,
+  commission_type text not null default 'percentage' check (commission_type in ('percentage','fixed')),
+  commission_percentage numeric,
+  commission_fixed_amount numeric,
+  payment_full_at_deed boolean not null default true,
+  payment_split_promissory_pct numeric,
+  payment_split_deed_pct numeric,
+  lister_name text,
+  lister_id_doc text,
+  lister_nif text,
+  lister_phone text,
+  lister_email text,
+  competent_court text,
+  special_conditions text,
+  contract_duration_months integer not null default 6,
+  status text not null default 'draft' check (status in ('draft','signed','terminated')),
+  signed_at date,
+  created_at timestamptz default now()
+);
+
+-- ============================================================
 -- STORAGE — buckets utilisés par l'app (à créer une fois, publics en lecture)
 --   agent-photos     : photo de profil de l'agent
 --   property-images  : photos des biens
@@ -144,6 +195,7 @@ alter table public.properties enable row level security;
 alter table public.buyers enable row level security;
 alter table public.colleagues enable row level security;
 alter table public.matches enable row level security;
+alter table public.property_mandates enable row level security;
 
 -- Agents : lecture publique du profil (pages publiques /agents/[slug]),
 -- mais chacun ne modifie que le sien.
@@ -181,6 +233,11 @@ create policy "Agent voit les matchs qui le concernent" on public.matches
 
 create policy "Agent modifie le statut des matchs qui le concernent" on public.matches
   for update using (auth.uid() = buyer_agent_id or auth.uid() = seller_agent_id);
+
+-- Property mandates (CMI) : données sensibles (propriétaire, conditions
+-- commerciales), strictement privées à l'agent qui gère le bien.
+create policy "Agent gère les mandats de ses propres biens" on public.property_mandates
+  for all using (auth.uid() = agent_id) with check (auth.uid() = agent_id);
 
 -- ============================================================
 -- Trigger : crée automatiquement le profil agent à l'inscription
