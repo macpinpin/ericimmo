@@ -95,6 +95,93 @@ export type Property = {
     title?: Record<string, string>
     description?: Record<string, string>
   } | null
+  matriz_artigo: string | null
+  conservatoria_registo: string | null
+  conservatoria_numero: string | null
+  certificado_energetico_numero: string | null
+  certificado_energetico_validade: string | null
+  licenca_numero: string | null
+  licenca_data: string | null
+  ano_construcao: number | null
+  created_at: string
+}
+
+export type PropertyDocumentType = 'caderneta_predial' | 'certificado_energetico' | 'certidao_registo_predial' | 'licenca_utilizacao' | 'outro'
+
+export type PropertyDocument = {
+  id: string
+  property_id: string
+  agent_id: string
+  doc_type: PropertyDocumentType
+  file_name: string
+  file_url: string
+  uploaded_at: string
+}
+
+export type PropertyOwnerKind = 'singular' | 'coletiva'
+
+export type PropertyOwner = {
+  kind: PropertyOwnerKind
+  civility?: string
+  first_name?: string
+  last_name?: string
+  birth_date?: string
+  birth_place?: string
+  country?: string
+  nationality?: string
+  address?: string
+  postal_code?: string
+  locality?: string
+  phone?: string
+  email?: string
+  marital_status?: string
+  marital_regime?: string
+  ownership_nature?: string
+  id_doc_type?: string
+  id_doc_number?: string
+  id_doc_expiry?: string
+  nif?: string
+  // Pessoa coletiva
+  company_name?: string
+  legal_nature?: string
+  share_capital?: number
+  registry_office?: string
+  registered_office?: string
+  rep_first_name?: string
+  rep_last_name?: string
+  rep_capacity?: string
+  rep_id_doc_type?: string
+  rep_id_doc_number?: string
+  rep_nif?: string
+}
+
+export type PropertyMandate = {
+  id: string
+  property_id: string
+  agent_id: string
+  contract_type: 'exclusivo' | 'semi_exclusivo' | 'nao_exclusivo'
+  business_type: 'compra' | 'trespasse' | 'arrendamento'
+  owners: PropertyOwner[]
+  price: number | null
+  additional_service_fee: number | null
+  liens_free: boolean
+  liens_description: string | null
+  commission_type: 'percentage' | 'fixed'
+  commission_percentage: number | null
+  commission_fixed_amount: number | null
+  payment_full_at_deed: boolean
+  payment_split_promissory_pct: number | null
+  payment_split_deed_pct: number | null
+  lister_name: string | null
+  lister_id_doc: string | null
+  lister_nif: string | null
+  lister_phone: string | null
+  lister_email: string | null
+  competent_court: string | null
+  special_conditions: string | null
+  contract_duration_months: number
+  status: 'draft' | 'signed' | 'terminated'
+  signed_at: string | null
   created_at: string
 }
 

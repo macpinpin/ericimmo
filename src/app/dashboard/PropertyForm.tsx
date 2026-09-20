@@ -24,17 +24,17 @@ export default function PropertyForm({ agentId, property, onSaved, onClose }: Pr
     property?.translations || {}
   )
 
-  const [importUrl, setImportUrl] = useState('')
-  const [importing, setImporting] = useState(false)
   const [importError, setImportError] = useState('')
   const [importNote, setImportNote] = useState('')
+  const pdfInputRef = useRef<HTMLInputElement>(null)
+  const [importingPdf, setImportingPdf] = useState(false)
 
   const [form, setForm] = useState({
     title: property?.title || '',
     description: property?.description || '',
     price: property?.price?.toString() || '',
     type: property?.type || 'villa',
-    status: property?.status || 'active',
+    status: property?.status || 'draft',
     location: property?.location || '',
     district: property?.district || '',
     concelho: property?.concelho || '',
@@ -105,46 +105,63 @@ export default function PropertyForm({ agentId, property, onSaved, onClose }: Pr
     setForm(prev => ({ ...prev, [field]: value }))
   }
 
-  async function handleImport() {
-    if (!importUrl) return
-    setImporting(true)
+  type ImportedData = {
+    title?: string | null
+    description?: string | null
+    price?: number | null
+    type?: string | null
+    location?: string | null
+    district?: string | null
+    concelho?: string | null
+    freguesia?: string | null
+    bedrooms?: number | null
+    bathrooms?: number | null
+    area?: number | null
+    plot?: number | null
+    ref?: string | null
+    images?: string[]
+  }
+
+  const IMPORT_PROPERTY_TYPES = ['villa', 'apartment', 'land', 'commercial', 'other']
+
+  function applyImportedData(data: ImportedData) {
+    setForm(prev => ({
+      ...prev,
+      title: data.title || prev.title,
+      description: data.description || prev.description,
+      price: data.price != null ? String(data.price) : prev.price,
+      type: (data.type && IMPORT_PROPERTY_TYPES.includes(data.type) ? data.type : prev.type) as typeof prev.type,
+      location: data.location || prev.location,
+      district: data.district || prev.district,
+      concelho: data.concelho || prev.concelho,
+      freguesia: data.freguesia || prev.freguesia,
+      bedrooms: data.bedrooms != null ? String(data.bedrooms) : prev.bedrooms,
+      bathrooms: data.bathrooms != null ? String(data.bathrooms) : prev.bathrooms,
+      area_bruta_privativa: data.area != null ? String(data.area) : prev.area_bruta_privativa,
+      plot: data.plot != null ? String(data.plot) : prev.plot,
+      ref: data.ref || prev.ref,
+    }))
+    const images = data.images
+    if (images?.length) setUploadedImages(prev => [...prev, ...images])
+  }
+
+  async function handlePdfImport(file: File) {
+    setImportingPdf(true)
     setImportError('')
     setImportNote('')
     try {
-      const res = await fetch('/api/import-listing', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: importUrl, agentId }),
-      })
+      const body = new FormData()
+      body.append('file', file)
+      const res = await fetch('/api/import-pdf', { method: 'POST', body })
       const data = await res.json()
       if (data.error) { setImportError(data.error); return }
-      setForm(prev => ({
-        ...prev,
-        title: data.title || prev.title,
-        description: data.description || prev.description,
-        price: data.price != null ? String(data.price) : prev.price,
-        type: data.type || prev.type,
-        location: data.location || prev.location,
-        district: data.district || prev.district,
-        bedrooms: data.bedrooms != null ? String(data.bedrooms) : prev.bedrooms,
-        bathrooms: data.bathrooms != null ? String(data.bathrooms) : prev.bathrooms,
-        area_bruta_privativa: data.area != null ? String(data.area) : prev.area_bruta_privativa,
-        plot: data.plot != null ? String(data.plot) : prev.plot,
-        ref: data.ref || prev.ref,
-      }))
-      if (data.images?.length) setUploadedImages(prev => [...prev, ...data.images])
-      const missing = [
-        data.price == null && 'prix',
-        data.bedrooms == null && 'chambres',
-        data.area == null && 'surface',
-      ].filter(Boolean)
-      if (missing.length) {
-        setImportNote(`Certaines infos n'ont pas pu être détectées automatiquement (${missing.join(', ')}) — ce portail les charge probablement après coup. Complétez-les à la main ci-dessous.`)
-      }
+      applyImportedData(data)
+      setImportNote("Vérifiez les champs pré-remplis, la description (parfois tronquée par l'impression PDF) et ajoutez les photos manuellement.")
     } catch (e) {
       setImportError('Erreur : ' + (e instanceof Error ? e.message : 'inconnue'))
     } finally {
-      setImporting(false)
+      setImportingPdf(false)
+      if (pdfInputRef.current) pdfInputRef.current.value = ''
     }
   }
 
@@ -232,27 +249,23 @@ export default function PropertyForm({ agentId, property, onSaved, onClose }: Pr
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-5">
-          {/* Import depuis un lien */}
+          {/* Import depuis un PDF eGO */}
           {!property && (
             <div className="bg-purple-50 border border-purple-100 rounded-xl p-4">
-              <label className={labelClass}>Importer depuis un lien (idealista, Imovirtual, SAFTI...)</label>
-              <div className="flex gap-2 mt-1">
+              <label className={labelClass}>Importer depuis un PDF eGO (fiche imprimée en PDF)</label>
+              <div className="flex items-center gap-2 mt-1">
                 <input
-                  className={inputClass}
-                  value={importUrl}
-                  onChange={e => setImportUrl(e.target.value)}
-                  placeholder="https://www.idealista.pt/imovel/..."
+                  ref={pdfInputRef}
+                  type="file"
+                  accept="application/pdf"
+                  onChange={e => e.target.files?.[0] && handlePdfImport(e.target.files[0])}
+                  disabled={importingPdf}
+                  className="text-sm text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-purple-600 file:text-white file:text-sm file:font-semibold hover:file:bg-purple-700 file:cursor-pointer disabled:opacity-50"
                 />
-                <button
-                  type="button"
-                  onClick={handleImport}
-                  disabled={importing || !importUrl}
-                  className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-semibold px-5 py-3 rounded-xl transition-colors text-sm whitespace-nowrap"
-                >
-                  {importing ? '⏳ Import…' : '✨ Importer'}
-                </button>
+                {importingPdf && <span className="text-xs text-purple-500 whitespace-nowrap">⏳ Import…</span>}
               </div>
               <p className="text-xs text-purple-500 mt-2">Les champs et photos ci-dessous seront pré-remplis — vérifiez avant d&apos;enregistrer.</p>
+
               {importError && <p className="text-red-500 text-xs mt-2">{importError}</p>}
               {importNote && <p className="text-amber-600 text-xs mt-2">⚠️ {importNote}</p>}
             </div>
@@ -279,10 +292,13 @@ export default function PropertyForm({ agentId, property, onSaved, onClose }: Pr
             <div>
               <label className={labelClass}>Statut</label>
               <select className={inputClass} value={form.status} onChange={e => set('status', e.target.value)}>
-                <option value="active">Actif</option>
-                <option value="draft">Brouillon</option>
+                {property?.status === 'active' && <option value="active">Actif</option>}
+                <option value="draft">En prospection</option>
                 <option value="sold">Vendu</option>
               </select>
+              {property?.status !== 'active' && (
+                <p className="text-xs text-gray-400 mt-1">Le passage en &quot;Actif&quot; se fait via &quot;Documents & validation&quot; une fois le dossier complet.</p>
+              )}
             </div>
           </div>
 
