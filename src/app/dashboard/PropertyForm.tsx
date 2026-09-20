@@ -24,8 +24,6 @@ export default function PropertyForm({ agentId, property, onSaved, onClose }: Pr
     property?.translations || {}
   )
 
-  const [importUrl, setImportUrl] = useState('')
-  const [importing, setImporting] = useState(false)
   const [importError, setImportError] = useState('')
   const [importNote, setImportNote] = useState('')
   const pdfInputRef = useRef<HTMLInputElement>(null)
@@ -147,35 +145,6 @@ export default function PropertyForm({ agentId, property, onSaved, onClose }: Pr
     if (images?.length) setUploadedImages(prev => [...prev, ...images])
   }
 
-  async function handleImport() {
-    if (!importUrl) return
-    setImporting(true)
-    setImportError('')
-    setImportNote('')
-    try {
-      const res = await fetch('/api/import-listing', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: importUrl, agentId }),
-      })
-      const data = await res.json()
-      if (data.error) { setImportError(data.error); return }
-      applyImportedData(data)
-      const missing = [
-        data.price == null && 'prix',
-        data.bedrooms == null && 'chambres',
-        data.area == null && 'surface',
-      ].filter(Boolean)
-      if (missing.length) {
-        setImportNote(`Certaines infos n'ont pas pu être détectées automatiquement (${missing.join(', ')}) — ce portail les charge probablement après coup. Complétez-les à la main ci-dessous.`)
-      }
-    } catch (e) {
-      setImportError('Erreur : ' + (e instanceof Error ? e.message : 'inconnue'))
-    } finally {
-      setImporting(false)
-    }
-  }
-
   async function handlePdfImport(file: File) {
     setImportingPdf(true)
     setImportError('')
@@ -280,42 +249,22 @@ export default function PropertyForm({ agentId, property, onSaved, onClose }: Pr
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-5">
-          {/* Import depuis un lien */}
+          {/* Import depuis un PDF eGO */}
           {!property && (
             <div className="bg-purple-50 border border-purple-100 rounded-xl p-4">
-              <label className={labelClass}>Importer depuis un lien (idealista, Imovirtual, SAFTI...)</label>
-              <div className="flex gap-2 mt-1">
+              <label className={labelClass}>Importer depuis un PDF eGO (fiche imprimée en PDF)</label>
+              <div className="flex items-center gap-2 mt-1">
                 <input
-                  className={inputClass}
-                  value={importUrl}
-                  onChange={e => setImportUrl(e.target.value)}
-                  placeholder="https://www.idealista.pt/imovel/..."
+                  ref={pdfInputRef}
+                  type="file"
+                  accept="application/pdf"
+                  onChange={e => e.target.files?.[0] && handlePdfImport(e.target.files[0])}
+                  disabled={importingPdf}
+                  className="text-sm text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-purple-600 file:text-white file:text-sm file:font-semibold hover:file:bg-purple-700 file:cursor-pointer disabled:opacity-50"
                 />
-                <button
-                  type="button"
-                  onClick={handleImport}
-                  disabled={importing || !importUrl}
-                  className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-semibold px-5 py-3 rounded-xl transition-colors text-sm whitespace-nowrap"
-                >
-                  {importing ? '⏳ Import…' : '✨ Importer'}
-                </button>
+                {importingPdf && <span className="text-xs text-purple-500 whitespace-nowrap">⏳ Import…</span>}
               </div>
               <p className="text-xs text-purple-500 mt-2">Les champs et photos ci-dessous seront pré-remplis — vérifiez avant d&apos;enregistrer.</p>
-
-              <div className="mt-3 pt-3 border-t border-purple-100">
-                <label className={labelClass}>Ou importer depuis un PDF eGO (fiche imprimée en PDF)</label>
-                <div className="flex items-center gap-2 mt-1">
-                  <input
-                    ref={pdfInputRef}
-                    type="file"
-                    accept="application/pdf"
-                    onChange={e => e.target.files?.[0] && handlePdfImport(e.target.files[0])}
-                    disabled={importingPdf}
-                    className="text-sm text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-purple-600 file:text-white file:text-sm file:font-semibold hover:file:bg-purple-700 file:cursor-pointer disabled:opacity-50"
-                  />
-                  {importingPdf && <span className="text-xs text-purple-500 whitespace-nowrap">⏳ Import…</span>}
-                </div>
-              </div>
 
               {importError && <p className="text-red-500 text-xs mt-2">{importError}</p>}
               {importNote && <p className="text-amber-600 text-xs mt-2">⚠️ {importNote}</p>}
