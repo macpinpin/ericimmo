@@ -127,6 +127,7 @@ export default function PropertyForm({ agentId, property, onSaved, onClose }: Pr
         bedrooms: data.bedrooms != null ? String(data.bedrooms) : prev.bedrooms,
         bathrooms: data.bathrooms != null ? String(data.bathrooms) : prev.bathrooms,
         area_bruta_privativa: data.area != null ? String(data.area) : prev.area_bruta_privativa,
+        plot: data.plot != null ? String(data.plot) : prev.plot,
         ref: data.ref || prev.ref,
       }))
       if (data.images?.length) setUploadedImages(prev => [...prev, ...data.images])

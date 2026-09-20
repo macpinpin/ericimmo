@@ -163,6 +163,49 @@ function extractEmbeddedState(html: string): string {
   return blocks.join('\n---\n')
 }
 
+// Détection directe par motifs, en complément de l'IA : plus fiable que de
+// laisser le modèle "chercher" dans un bloc de texte, surtout pour des
+// portails portugais qui utilisent des libellés assez constants
+// (Quartos, Casa de Banho, Área Bruta, Ref...).
+function extractPriceCandidates(text: string): number[] {
+  const found: number[] = []
+  const re = /(?:€\s?(\d[\d.,\s]{2,12})|(\d[\d.,\s]{2,12})\s?€)/g
+  let m
+  while ((m = re.exec(text))) {
+    const digitsOnly = (m[1] || m[2] || '').replace(/\D/g, '')
+    const n = parseInt(digitsOnly, 10)
+    if (Number.isFinite(n) && n >= 1000 && n <= 50_000_000) found.push(n)
+  }
+  return [...new Set(found)].slice(0, 10)
+}
+
+function extractLabeledNumber(text: string, labels: string[]): number | null {
+  for (const label of labels) {
+    // le chiffre précède souvent le libellé dans ces UI (icône + nombre, puis légende en dessous)
+    const before = text.match(new RegExp(`(\\d+(?:[.,]\\d+)?)\\s*(?:m²)?\\s*${label}`, 'i'))
+    if (before) {
+      const n = parseFloat(before[1].replace(',', '.'))
+      if (Number.isFinite(n)) return n
+    }
+    const after = text.match(new RegExp(`${label}[^\\d]{0,20}?(\\d+(?:[.,]\\d+)?)`, 'i'))
+    if (after) {
+      const n = parseFloat(after[1].replace(',', '.'))
+      if (Number.isFinite(n)) return n
+    }
+  }
+  return null
+}
+
+function extractTypologyBedrooms(text: string): number | null {
+  const m = text.match(/\bT(\d{1,2})\b/)
+  return m ? parseInt(m[1], 10) : null
+}
+
+function extractRefHint(text: string): string | null {
+  const m = text.match(/\bRef\.?\s*:?\s*([A-Z]{2,}[:\-]?\d{3,})/i)
+  return m ? m[1].trim() : null
+}
+
 function extractImagesFromText(text: string, baseUrl: string): string[] {
   const urls = new Set<string>()
   const re = /https?:\/\/[^\s"'\\]+\.(?:jpg|jpeg|png|webp)(?:\?[^\s"'\\]*)?/gi
@@ -191,12 +234,22 @@ export async function POST(req: Request) {
     const description = extractMeta(html, 'og:description') || extractMeta(html, 'description') || ''
     const jsonLd = extractJsonLd(html)
     const embeddedState = extractEmbeddedState(html)
-    const bodyText = stripTags(html).slice(0, 15000)
+    const fullText = stripTags(html)
+    const bodyText = fullText.slice(0, 15000)
     const imageCandidates = [
       ...extractImages(html, page.finalUrl),
       ...extractImagesFromText(embeddedState, page.finalUrl),
     ]
     const districts = getDistricts()
+
+    // Signaux détectés par motifs sur le texte COMPLET (pas tronqué) — bien plus
+    // fiable que de compter sur l'IA pour repérer un nombre isolé dans un pavé de texte.
+    const priceHints = extractPriceCandidates(fullText)
+    const bedroomsHint = extractTypologyBedrooms(fullText) ?? extractLabeledNumber(fullText, ['Quartos', 'Chambres', 'Bedrooms'])
+    const bathroomsHint = extractLabeledNumber(fullText, ['Casas? de [Bb]anho', 'Salles? de bain', 'Bathrooms'])
+    const areaHint = extractLabeledNumber(fullText, ['Área (?:[Bb]ruta)(?: privativa)?', 'Área útil', 'Surface habitable', 'Living area'])
+    const plotHint = extractLabeledNumber(fullText, ['Área do terreno', 'Área de terreno', 'Surface terrain', 'Plot area'])
+    const refHint = extractRefHint(fullText)
 
     const prompt = `Tu es un assistant qui extrait les informations d'une annonce immobilière à partir du contenu brut d'une page web (portail immobilier). Réponds UNIQUEMENT en JSON valide, sans markdown, sans commentaire.
 
@@ -205,25 +258,34 @@ ${districts.join(', ')}
 
 Types valides : villa, apartment, land, commercial, other
 
+SIGNAUX DÉTECTÉS AUTOMATIQUEMENT SUR LA PAGE (indices fiables, à privilégier s'ils sont cohérents avec le reste — mais vérifie-les avec le contexte, ce sont des candidats, pas une vérité absolue) :
+- Prix possibles (en euros) : ${priceHints.length ? priceHints.join(', ') : '(aucun détecté)'}
+- Chambres détectées : ${bedroomsHint ?? '(aucune)'}
+- Salles de bain détectées : ${bathroomsHint ?? '(aucune)'}
+- Surface habitable détectée (m²) : ${areaHint ?? '(aucune)'}
+- Surface terrain détectée (m²) : ${plotHint ?? '(aucune)'}
+- Référence détectée : ${refHint ?? '(aucune)'}
+
 Contenu de la page :
 TITRE META: ${title}
 DESCRIPTION META: ${description}
 DONNÉES STRUCTURÉES (JSON-LD, peut être vide) :
 ${jsonLd || '(aucune)'}
-DONNÉES JSON EMBARQUÉES DANS LA PAGE (state de l'application, souvent la source la plus fiable pour le prix/surfaces/photos — peut être vide) :
+DONNÉES JSON EMBARQUÉES DANS LA PAGE (state de l'application, peut être vide) :
 ${embeddedState || '(aucune)'}
 TEXTE DE LA PAGE :
 ${bodyText}
 
-Retourne ce JSON exact (utilise null si une info est vraiment absente ou incertaine — ne mets JAMAIS 0 par défaut pour le prix, cherche activement dans les 3 sources ci-dessus avant de conclure à null) :
-{"title":"","description":"","price":null,"type":"other","location":"","district":null,"bedrooms":null,"bathrooms":null,"area":null,"ref":null}
+Retourne ce JSON exact (utilise null si une info est vraiment absente ou incertaine — ne mets JAMAIS 0 par défaut pour le prix ; si un seul prix est détecté dans les signaux automatiques et qu'il est cohérent avec le contexte, utilise-le) :
+{"title":"","description":"","price":null,"type":"other","location":"","district":null,"bedrooms":null,"bathrooms":null,"area":null,"plot":null,"ref":null}
 
 - "title": titre court et propre de l'annonce
 - "description": 2 à 4 phrases en français, factuelles, résumant le bien (ne pas inventer de détails absents du texte)
-- "price": nombre uniquement, en euros, sans symbole ni séparateur (ex: 450000) — regarde en priorité les données JSON embarquées et structurées, le prix y est presque toujours présent même s'il n'apparaît pas dans le texte visible tronqué
+- "price": nombre uniquement, en euros, sans symbole ni séparateur (ex: 450000)
 - "location": la localisation telle qu'affichée sur l'annonce (ville/région)
-- "area": surface habitable en m², nombre uniquement
-- "ref": référence de l'annonce si visible sur le portail`
+- "area": surface habitable / brute du bien en m², nombre uniquement (pas le terrain)
+- "plot": surface du terrain en m², nombre uniquement, si applicable (maison avec terrain)
+- "ref": référence de l'annonce si visible sur le portail (utilise le signal détecté ci-dessus en priorité)`
 
     const message = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
@@ -278,6 +340,7 @@ Retourne ce JSON exact (utilise null si une info est vraiment absente ou incerta
       bedrooms: num(extracted.bedrooms),
       bathrooms: num(extracted.bathrooms),
       area: num(extracted.area),
+      plot: num(extracted.plot),
       ref: extracted.ref || null,
       images,
     })
