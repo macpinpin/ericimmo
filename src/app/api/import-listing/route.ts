@@ -46,7 +46,7 @@ async function assertPublicHost(hostnameRaw: string) {
   }
 }
 
-async function safeFetch(target: string, opts: { maxBytes: number; timeoutMs: number }) {
+async function safeFetch(target: string, opts: { maxBytes: number; timeoutMs: number; accept?: string }) {
   let current = target
   for (let hop = 0; hop < 5; hop++) {
     const parsed = new URL(current)
@@ -58,7 +58,11 @@ async function safeFetch(target: string, opts: { maxBytes: number; timeoutMs: nu
     let res: Response
     try {
       res = await fetch(current, {
-        headers: { 'User-Agent': USER_AGENT, Accept: '*/*' },
+        headers: {
+          'User-Agent': USER_AGENT,
+          Accept: opts.accept || '*/*',
+          'Accept-Language': 'pt-PT,pt;q=0.9,fr;q=0.8,en;q=0.7',
+        },
         redirect: 'manual',
         signal: controller.signal,
       })
@@ -71,6 +75,9 @@ async function safeFetch(target: string, opts: { maxBytes: number; timeoutMs: nu
       if (!location) throw new Error('Redirection invalide')
       current = new URL(location, current).href
       continue
+    }
+    if (res.status === 403 || res.status === 429 || res.status === 503) {
+      throw new Error(`Ce site bloque les accès automatisés (erreur ${res.status}) — impossible d'importer depuis ce portail. Essayez un autre lien, ou remplissez le formulaire manuellement.`)
     }
     if (!res.ok) throw new Error(`Erreur HTTP ${res.status}`)
 
@@ -150,7 +157,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'URL invalide' }, { status: 400 })
     }
 
-    const page = await safeFetch(url, { maxBytes: 4_000_000, timeoutMs: 15000 })
+    const page = await safeFetch(url, { maxBytes: 4_000_000, timeoutMs: 15000, accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8' })
     const html = page.buffer.toString('utf-8')
 
     const title = extractMeta(html, 'og:title') || (html.match(/<title>([\s\S]*?)<\/title>/i)?.[1] || '')
@@ -215,7 +222,7 @@ Retourne ce JSON exact (utilise null si une info est absente ou incertaine — n
     for (const imgUrl of imageCandidates) {
       if (images.length >= 12) break
       try {
-        const img = await safeFetch(imgUrl, { maxBytes: 8_000_000, timeoutMs: 8000 })
+        const img = await safeFetch(imgUrl, { maxBytes: 8_000_000, timeoutMs: 8000, accept: 'image/avif,image/webp,image/*,*/*;q=0.8' })
         if (!img.contentType.startsWith('image/')) continue
         const ext = (img.contentType.split('/')[1]?.split(';')[0] || 'jpg').replace(/[^a-z0-9]/gi, '').slice(0, 4) || 'jpg'
         const path = `${agentId}/import-${Date.now()}-${images.length}.${ext}`
