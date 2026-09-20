@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { Property, PropertyDocument, PropertyDocumentType } from '@/lib/types'
 
@@ -22,10 +22,11 @@ const DOC_TYPES: { value: PropertyDocumentType; label: string; required: boolean
 export default function PropertyDocumentsPanel({ agentId, property, onStatusChange, onClose }: Props) {
   const [documents, setDocuments] = useState<PropertyDocument[]>([])
   const [loading, setLoading] = useState(true)
-  const [uploading, setUploading] = useState(false)
-  const [docType, setDocType] = useState<PropertyDocumentType>('caderneta_predial')
+  const [uploadingCount, setUploadingCount] = useState(0)
+  const [dragOver, setDragOver] = useState(false)
   const [error, setError] = useState('')
   const [validating, setValidating] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     supabase.from('property_documents').select('*').eq('property_id', property.id).order('uploaded_at', { ascending: false })
@@ -35,22 +36,44 @@ export default function PropertyDocumentsPanel({ agentId, property, onStatusChan
       })
   }, [property.id])
 
-  async function handleUpload(file: File) {
-    setUploading(true)
-    setError('')
+  async function classifyFile(file: File): Promise<PropertyDocumentType> {
     try {
-      const ext = file.name.split('.').pop()
-      const path = `${agentId}/${property.id}/${Date.now()}-${docType}.${ext}`
-      const { error: uploadError } = await supabase.storage.from('property-documents').upload(path, file)
-      if (uploadError) { setError(uploadError.message); return }
-      const { data, error: insertError } = await supabase.from('property_documents')
-        .insert({ property_id: property.id, agent_id: agentId, doc_type: docType, file_name: file.name, file_url: path })
-        .select().single()
-      if (insertError) { setError(insertError.message); return }
-      setDocuments(prev => [data as PropertyDocument, ...prev])
-    } finally {
-      setUploading(false)
+      const body = new FormData()
+      body.append('file', file)
+      const res = await fetch('/api/classify-document', { method: 'POST', body })
+      const data = await res.json()
+      return (data.docType as PropertyDocumentType) || 'outro'
+    } catch {
+      return 'outro'
     }
+  }
+
+  async function handleFiles(files: FileList | File[]) {
+    const list = Array.from(files)
+    setError('')
+    for (const file of list) {
+      setUploadingCount(c => c + 1)
+      try {
+        const docType = await classifyFile(file)
+        const ext = file.name.split('.').pop()
+        const path = `${agentId}/${property.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+        const { error: uploadError } = await supabase.storage.from('property-documents').upload(path, file)
+        if (uploadError) { setError(uploadError.message); continue }
+        const { data, error: insertError } = await supabase.from('property_documents')
+          .insert({ property_id: property.id, agent_id: agentId, doc_type: docType, file_name: file.name, file_url: path })
+          .select().single()
+        if (insertError) { setError(insertError.message); continue }
+        setDocuments(prev => [data as PropertyDocument, ...prev])
+      } finally {
+        setUploadingCount(c => c - 1)
+      }
+    }
+  }
+
+  async function handleTypeChange(doc: PropertyDocument, docType: PropertyDocumentType) {
+    const { data, error: updateError } = await supabase.from('property_documents').update({ doc_type: docType }).eq('id', doc.id).select().single()
+    if (updateError) { setError(updateError.message); return }
+    setDocuments(prev => prev.map(d => d.id === doc.id ? (data as PropertyDocument) : d))
   }
 
   async function handleDelete(doc: PropertyDocument) {
@@ -62,7 +85,7 @@ export default function PropertyDocumentsPanel({ agentId, property, onStatusChan
 
   async function handleView(doc: PropertyDocument) {
     const { data, error: signError } = await supabase.storage.from('property-documents').createSignedUrl(doc.file_url, 300)
-    if (signError || !data) { setError(signError?.message || 'Impossible d\'ouvrir le document'); return }
+    if (signError || !data) { setError(signError?.message || "Impossible d'ouvrir le document"); return }
     window.open(data.signedUrl, '_blank')
   }
 
@@ -89,8 +112,6 @@ export default function PropertyDocumentsPanel({ agentId, property, onStatusChan
     if (updateError) { setError(updateError.message); return }
     onStatusChange(data as Property)
   }
-
-  const inp = "w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-orange-400 transition-colors"
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center p-4 overflow-y-auto">
@@ -130,20 +151,35 @@ export default function PropertyDocumentsPanel({ agentId, property, onStatusChan
             </button>
           )}
 
-          {/* Upload */}
+          {/* Dépôt de documents */}
           <div className="border-t border-gray-100 pt-4">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Ajouter un document</p>
-            <div className="flex gap-2">
-              <select className={inp} value={docType} onChange={e => setDocType(e.target.value as PropertyDocumentType)}>
-                {DOC_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-              </select>
-              <label className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-semibold px-5 py-3 rounded-xl transition-colors text-sm whitespace-nowrap cursor-pointer">
-                {uploading ? '⏳…' : '+ Fichier'}
-                <input type="file" accept="application/pdf,image/*" capture="environment" className="hidden" disabled={uploading}
-                  onChange={e => e.target.files?.[0] && handleUpload(e.target.files[0])} />
-              </label>
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Documents officiels</p>
+            <div
+              className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors ${dragOver ? 'border-orange-400 bg-orange-50' : 'border-gray-200 hover:border-orange-300'}`}
+              onDragOver={e => { e.preventDefault(); setDragOver(true) }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={e => { e.preventDefault(); setDragOver(false); if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files) }}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="application/pdf,image/*"
+                capture="environment"
+                multiple
+                className="hidden"
+                onChange={e => e.target.files?.length && handleFiles(e.target.files)}
+              />
+              {uploadingCount > 0 ? (
+                <p className="text-orange-500 font-medium text-sm">⏳ Analyse et envoi en cours…</p>
+              ) : (
+                <>
+                  <p className="text-2xl mb-1">📄</p>
+                  <p className="text-gray-500 text-sm font-medium">Glissez vos documents ici (ou photographiez-les)</p>
+                  <p className="text-gray-400 text-xs mt-1">Le type (Caderneta, Certificado Energético...) est détecté automatiquement</p>
+                </>
+              )}
             </div>
-            <p className="text-xs text-gray-400 mt-2">Sur mobile, tu peux prendre le document en photo directement.</p>
           </div>
 
           {error && <p className="text-red-500 text-sm bg-red-50 px-4 py-2 rounded-lg">{error}</p>}
@@ -156,9 +192,15 @@ export default function PropertyDocumentsPanel({ agentId, property, onStatusChan
               <p className="text-sm text-gray-400">Aucun document déposé pour l&apos;instant.</p>
             ) : (
               documents.map(doc => (
-                <div key={doc.id} className="flex items-center justify-between bg-white border border-gray-100 rounded-lg px-4 py-2.5">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">{DOC_TYPES.find(t => t.value === doc.doc_type)?.label}</p>
+                <div key={doc.id} className="flex items-center justify-between bg-white border border-gray-100 rounded-lg px-4 py-2.5 gap-2">
+                  <div className="min-w-0 flex-1">
+                    <select
+                      value={doc.doc_type}
+                      onChange={e => handleTypeChange(doc, e.target.value as PropertyDocumentType)}
+                      className="text-sm font-medium text-gray-900 bg-transparent border-none focus:outline-none -ml-1 cursor-pointer"
+                    >
+                      {DOC_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                    </select>
                     <p className="text-xs text-gray-400 truncate">{doc.file_name}</p>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
