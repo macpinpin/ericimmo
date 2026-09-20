@@ -26,7 +26,7 @@ export default function SettingsPage() {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return
       setUserId(user.id)
-      supabase.from('profiles').select('powered_by, bio').eq('id', user.id).single()
+      supabase.from('agents').select('powered_by, bio').eq('id', user.id).single()
         .then(({ data }) => {
           if (data?.powered_by) setPoweredBy(data.powered_by)
           if (data?.bio) setBio(data.bio)
@@ -46,7 +46,7 @@ export default function SettingsPage() {
       })
       const data = await res.json()
       if (data.translations?.description) {
-        await supabase.from('profiles').upsert({ id: userId, bio, bio_translations: data.translations.description })
+        await supabase.from('agents').update({ bio, bio_translations: data.translations.description }).eq('id', userId)
         setBioTranslated(true)
         setTimeout(() => setBioTranslated(false), 4000)
       }
@@ -71,7 +71,7 @@ export default function SettingsPage() {
     if (!userId) return
     setPoweredByLoading(true)
     setPoweredBySuccess(false)
-    await supabase.from('profiles').upsert({ id: userId, powered_by: poweredBy })
+    await supabase.from('agents').update({ powered_by: poweredBy }).eq('id', userId)
     setPoweredByLoading(false)
     setPoweredBySuccess(true)
     setTimeout(() => setPoweredBySuccess(false), 3000)
@@ -81,7 +81,7 @@ export default function SettingsPage() {
     if (!userId) return
     setBioLoading(true)
     setBioSuccess(false)
-    await supabase.from('profiles').upsert({ id: userId, bio })
+    await supabase.from('agents').update({ bio }).eq('id', userId)
     setBioLoading(false)
     setBioSuccess(true)
     setTimeout(() => setBioSuccess(false), 3000)
