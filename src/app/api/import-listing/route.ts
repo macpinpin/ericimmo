@@ -311,6 +311,18 @@ Retourne ce JSON exact (utilise null si une info est vraiment absente ou incerta
     const district = districts.includes(extracted.district) ? extracted.district : null
     const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : null)
 
+    // Le modèle ne reprend pas toujours fidèlement les indices qu'on lui donne dans le
+    // prompt (notamment le prix, qui revient parfois à 0/null même quand détecté) — on
+    // fait donc confiance à la détection par motifs quand elle est fiable, plutôt que de
+    // dépendre entièrement de la réponse du modèle pour ces champs.
+    const aiPrice = num(extracted.price)
+    const price = aiPrice && aiPrice > 0 ? aiPrice : (priceHints[0] ?? null)
+    const bedrooms = num(extracted.bedrooms) ?? bedroomsHint
+    const bathrooms = num(extracted.bathrooms) ?? bathroomsHint
+    const area = num(extracted.area) ?? areaHint
+    const plot = num(extracted.plot) ?? plotHint
+    const ref = extracted.ref || refHint || null
+
     // Photos re-téléchargées côté serveur puis stockées sur notre bucket (pas de dépendance au portail d'origine)
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
     const images: string[] = []
@@ -333,15 +345,15 @@ Retourne ce JSON exact (utilise null si une info est vraiment absente ou incerta
     return NextResponse.json({
       title: extracted.title || '',
       description: extracted.description || '',
-      price: num(extracted.price),
+      price,
       type,
       location: extracted.location || '',
       district,
-      bedrooms: num(extracted.bedrooms),
-      bathrooms: num(extracted.bathrooms),
-      area: num(extracted.area),
-      plot: num(extracted.plot),
-      ref: extracted.ref || null,
+      bedrooms,
+      bathrooms,
+      area,
+      plot,
+      ref,
       images,
     })
   } catch (err) {
