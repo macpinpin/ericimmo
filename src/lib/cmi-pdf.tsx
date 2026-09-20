@@ -37,6 +37,38 @@ function fmtDate(d: string | null | undefined): string {
   return `${String(dt.getDate()).padStart(2, '0')}/${String(dt.getMonth() + 1).padStart(2, '0')}/${dt.getFullYear()}`
 }
 
+function buildConsiderandos(property: Property): string {
+  const propertyKind =
+    property.type === 'commercial' ? 'Estabelecimento comercial' : 'Habitação – Fração Autónoma / Prédio'
+
+  const parts: string[] = [
+    `O Segundo Contraente é legítimo possuidor e proprietário da fração autónoma / do prédio destinado a ${propertyKind}, constituído por ${property.bedrooms ?? '……'} divisões assoalhadas, com área total de ${property.area_bruta_privativa ?? '……'} m², sito na ${property.location}, freguesia de ${property.freguesia || '……'}, concelho de ${property.concelho || '……'}`,
+  ]
+
+  if (property.conservatoria_registo || property.conservatoria_numero) {
+    parts.push(`descrito na Conservatória do Registo Predial de ${property.conservatoria_registo || '……'}${property.conservatoria_numero ? ` sob o n.º ${property.conservatoria_numero}` : ''}`)
+  }
+
+  // Licença de Utilização/Habitação — dispensada para os imóveis de
+  // construção anterior a 1951.
+  const isento1951 = property.ano_construcao != null && property.ano_construcao < 1951
+  if (isento1951) {
+    parts.push(`imóvel de construção anterior a 1951 (${property.ano_construcao}), dispensado de Licença de Utilização nos termos da lei`)
+  } else {
+    parts.push(`com Licença de Utilização n.º ${property.licenca_numero || '……'}, emitida pela Câmara Municipal de ${property.concelho || '……'}${property.licenca_data ? ` em ${fmtDate(property.licenca_data)}` : ', em ……/……/……'}`)
+  }
+
+  if (property.matriz_artigo) {
+    parts.push(`inscrito na matriz predial urbana com o artigo n.º ${property.matriz_artigo}`)
+  }
+
+  if (property.certificado_energetico_numero) {
+    parts.push(`com certificado energético n.º ${property.certificado_energetico_numero}${property.certificado_energetico_validade ? `, válido até ${fmtDate(property.certificado_energetico_validade)}` : ''}`)
+  }
+
+  return `${parts.join(', ')}, doravante designado por "Imóvel".`
+}
+
 function ownerLabel(o: PropertyOwner): string {
   if (o.kind === 'coletiva') return o.company_name || '……………'
   return [o.first_name, o.last_name].filter(Boolean).join(' ') || '……………'
@@ -93,10 +125,7 @@ export async function generateCmiPdf(property: Property, mandate: PropertyMandat
   const owners = mandate.owners.length ? mandate.owners : ([{ kind: 'singular' }] as PropertyOwner[])
   const price = mandate.price ?? property.price
 
-  const propertyKind =
-    property.type === 'commercial' ? 'Estabelecimento comercial' : 'Habitação – Fração Autónoma / Prédio'
-
-  const considerandos = `O Segundo Contraente é legítimo possuidor e proprietário da fração autónoma / do prédio destinado a ${propertyKind}, constituído por ${property.bedrooms ?? '……'} divisões assoalhadas, com área total de ${property.area_bruta_privativa ?? '……'} m², sito na ${property.location}, freguesia de ${property.freguesia || '……'}, concelho de ${property.concelho || '……'}${property.conservatoria_registo ? `, descrito na Conservatória do Registo Predial de ${property.conservatoria_registo}` : ''}${property.conservatoria_numero ? ` sob o n.º ${property.conservatoria_numero}` : ''}${property.matriz_artigo ? `, inscrito na matriz predial urbana com o artigo n.º ${property.matriz_artigo}` : ''}${property.certificado_energetico_numero ? `, com certificado energético n.º ${property.certificado_energetico_numero}${property.certificado_energetico_validade ? `, válido até ${fmtDate(property.certificado_energetico_validade)}` : ''}` : ''}, doravante designado por "Imóvel".`
+  const considerandos = buildConsiderandos(property)
 
   return renderToBuffer(
     <Document title={`CMI - ${property.title}`}>
