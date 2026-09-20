@@ -27,6 +27,7 @@ export default function PropertyForm({ agentId, property, onSaved, onClose }: Pr
   const [importUrl, setImportUrl] = useState('')
   const [importing, setImporting] = useState(false)
   const [importError, setImportError] = useState('')
+  const [importNote, setImportNote] = useState('')
 
   const [form, setForm] = useState({
     title: property?.title || '',
@@ -108,6 +109,7 @@ export default function PropertyForm({ agentId, property, onSaved, onClose }: Pr
     if (!importUrl) return
     setImporting(true)
     setImportError('')
+    setImportNote('')
     try {
       const res = await fetch('/api/import-listing', {
         method: 'POST',
@@ -127,9 +129,18 @@ export default function PropertyForm({ agentId, property, onSaved, onClose }: Pr
         bedrooms: data.bedrooms != null ? String(data.bedrooms) : prev.bedrooms,
         bathrooms: data.bathrooms != null ? String(data.bathrooms) : prev.bathrooms,
         area_bruta_privativa: data.area != null ? String(data.area) : prev.area_bruta_privativa,
+        plot: data.plot != null ? String(data.plot) : prev.plot,
         ref: data.ref || prev.ref,
       }))
       if (data.images?.length) setUploadedImages(prev => [...prev, ...data.images])
+      const missing = [
+        data.price == null && 'prix',
+        data.bedrooms == null && 'chambres',
+        data.area == null && 'surface',
+      ].filter(Boolean)
+      if (missing.length) {
+        setImportNote(`Certaines infos n'ont pas pu être détectées automatiquement (${missing.join(', ')}) — ce portail les charge probablement après coup. Complétez-les à la main ci-dessous.`)
+      }
     } catch (e) {
       setImportError('Erreur : ' + (e instanceof Error ? e.message : 'inconnue'))
     } finally {
@@ -243,6 +254,7 @@ export default function PropertyForm({ agentId, property, onSaved, onClose }: Pr
               </div>
               <p className="text-xs text-purple-500 mt-2">Les champs et photos ci-dessous seront pré-remplis — vérifiez avant d&apos;enregistrer.</p>
               {importError && <p className="text-red-500 text-xs mt-2">{importError}</p>}
+              {importNote && <p className="text-amber-600 text-xs mt-2">⚠️ {importNote}</p>}
             </div>
           )}
 
