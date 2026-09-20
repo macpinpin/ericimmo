@@ -24,6 +24,10 @@ export default function PropertyForm({ agentId, property, onSaved, onClose }: Pr
     property?.translations || {}
   )
 
+  const [importUrl, setImportUrl] = useState('')
+  const [importing, setImporting] = useState(false)
+  const [importError, setImportError] = useState('')
+
   const [form, setForm] = useState({
     title: property?.title || '',
     description: property?.description || '',
@@ -98,6 +102,39 @@ export default function PropertyForm({ agentId, property, onSaved, onClose }: Pr
 
   function set(field: string, value: string) {
     setForm(prev => ({ ...prev, [field]: value }))
+  }
+
+  async function handleImport() {
+    if (!importUrl) return
+    setImporting(true)
+    setImportError('')
+    try {
+      const res = await fetch('/api/import-listing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: importUrl, agentId }),
+      })
+      const data = await res.json()
+      if (data.error) { setImportError(data.error); return }
+      setForm(prev => ({
+        ...prev,
+        title: data.title || prev.title,
+        description: data.description || prev.description,
+        price: data.price != null ? String(data.price) : prev.price,
+        type: data.type || prev.type,
+        location: data.location || prev.location,
+        district: data.district || prev.district,
+        bedrooms: data.bedrooms != null ? String(data.bedrooms) : prev.bedrooms,
+        bathrooms: data.bathrooms != null ? String(data.bathrooms) : prev.bathrooms,
+        area_bruta_privativa: data.area != null ? String(data.area) : prev.area_bruta_privativa,
+        ref: data.ref || prev.ref,
+      }))
+      if (data.images?.length) setUploadedImages(prev => [...prev, ...data.images])
+    } catch (e) {
+      setImportError('Erreur : ' + (e instanceof Error ? e.message : 'inconnue'))
+    } finally {
+      setImporting(false)
+    }
   }
 
   async function translateDescription() {
@@ -184,6 +221,31 @@ export default function PropertyForm({ agentId, property, onSaved, onClose }: Pr
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-5">
+          {/* Import depuis un lien */}
+          {!property && (
+            <div className="bg-purple-50 border border-purple-100 rounded-xl p-4">
+              <label className={labelClass}>Importer depuis un lien (idealista, Imovirtual, SAFTI...)</label>
+              <div className="flex gap-2 mt-1">
+                <input
+                  className={inputClass}
+                  value={importUrl}
+                  onChange={e => setImportUrl(e.target.value)}
+                  placeholder="https://www.idealista.pt/imovel/..."
+                />
+                <button
+                  type="button"
+                  onClick={handleImport}
+                  disabled={importing || !importUrl}
+                  className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-semibold px-5 py-3 rounded-xl transition-colors text-sm whitespace-nowrap"
+                >
+                  {importing ? '⏳ Import…' : '✨ Importer'}
+                </button>
+              </div>
+              <p className="text-xs text-purple-500 mt-2">Les champs et photos ci-dessous seront pré-remplis — vérifiez avant d&apos;enregistrer.</p>
+              {importError && <p className="text-red-500 text-xs mt-2">{importError}</p>}
+            </div>
+          )}
+
           {/* Titre */}
           <div>
             <label className={labelClass}>Titre *</label>
