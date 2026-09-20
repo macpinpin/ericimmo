@@ -106,6 +106,18 @@ export type Property = {
   created_at: string
 }
 
+export type PropertyDocumentType = 'caderneta_predial' | 'certificado_energetico' | 'certidao_registo_predial' | 'licenca_utilizacao' | 'outro'
+
+export type PropertyDocument = {
+  id: string
+  property_id: string
+  agent_id: string
+  doc_type: PropertyDocumentType
+  file_name: string
+  file_url: string
+  uploaded_at: string
+}
+
 export type PropertyOwnerKind = 'singular' | 'coletiva'
 
 export type PropertyOwner = {

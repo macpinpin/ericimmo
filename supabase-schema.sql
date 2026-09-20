@@ -175,9 +175,28 @@ create table public.property_mandates (
 );
 
 -- ============================================================
--- STORAGE — buckets utilisés par l'app (à créer une fois, publics en lecture)
---   agent-photos     : photo de profil de l'agent
---   property-images  : photos des biens
+-- PROPERTY_DOCUMENTS — documents officiels déposés sur un bien (caderneta
+-- predial, certificado energético...). Toujours privés à l'agent — jamais
+-- exposés sur la fiche publique, seules les données qu'on en extrait le
+-- sont via les colonnes dédiées de `properties`.
+-- ============================================================
+create table public.property_documents (
+  id uuid default gen_random_uuid() primary key,
+  property_id uuid references public.properties(id) on delete cascade not null,
+  agent_id uuid references public.agents(id) on delete cascade not null,
+  doc_type text not null check (doc_type in ('caderneta_predial','certificado_energetico','certidao_registo_predial','licenca_utilizacao','outro')),
+  file_name text not null,
+  file_url text not null,
+  uploaded_at timestamptz default now()
+);
+
+-- ============================================================
+-- STORAGE — buckets utilisés par l'app
+--   agent-photos       : photo de profil de l'agent (public)
+--   property-images    : photos des biens (public)
+--   property-documents : documents officiels des biens (privé — accès
+--                        uniquement via URL signée, jamais de lecture
+--                        publique anonyme)
 -- ============================================================
 insert into storage.buckets (id, name, public)
 values ('agent-photos', 'agent-photos', true)
@@ -186,6 +205,15 @@ on conflict (id) do nothing;
 insert into storage.buckets (id, name, public)
 values ('property-images', 'property-images', true)
 on conflict (id) do nothing;
+
+insert into storage.buckets (id, name, public)
+values ('property-documents', 'property-documents', false)
+on conflict (id) do nothing;
+
+-- Bucket privé : seul le propriétaire du dossier (agentId/...) peut lire/écrire/supprimer.
+create policy "Agent gère ses propres documents" on storage.objects
+  for all using (bucket_id = 'property-documents' and (storage.foldername(name))[1] = auth.uid()::text)
+  with check (bucket_id = 'property-documents' and (storage.foldername(name))[1] = auth.uid()::text);
 
 -- ============================================================
 -- SÉCURITÉ (Row Level Security)
@@ -196,6 +224,7 @@ alter table public.buyers enable row level security;
 alter table public.colleagues enable row level security;
 alter table public.matches enable row level security;
 alter table public.property_mandates enable row level security;
+alter table public.property_documents enable row level security;
 
 -- Agents : lecture publique du profil (pages publiques /agents/[slug]),
 -- mais chacun ne modifie que le sien.
@@ -237,6 +266,10 @@ create policy "Agent modifie le statut des matchs qui le concernent" on public.m
 -- Property mandates (CMI) : données sensibles (propriétaire, conditions
 -- commerciales), strictement privées à l'agent qui gère le bien.
 create policy "Agent gère les mandats de ses propres biens" on public.property_mandates
+  for all using (auth.uid() = agent_id) with check (auth.uid() = agent_id);
+
+-- Property documents : strictement privés à l'agent propriétaire du bien.
+create policy "Agent gère les documents de ses propres biens" on public.property_documents
   for all using (auth.uid() = agent_id) with check (auth.uid() = agent_id);
 
 -- ============================================================

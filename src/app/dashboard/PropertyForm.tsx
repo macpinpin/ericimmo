@@ -36,7 +36,7 @@ export default function PropertyForm({ agentId, property, onSaved, onClose }: Pr
     description: property?.description || '',
     price: property?.price?.toString() || '',
     type: property?.type || 'villa',
-    status: property?.status || 'active',
+    status: property?.status || 'draft',
     location: property?.location || '',
     district: property?.district || '',
     concelho: property?.concelho || '',
@@ -343,10 +343,13 @@ export default function PropertyForm({ agentId, property, onSaved, onClose }: Pr
             <div>
               <label className={labelClass}>Statut</label>
               <select className={inputClass} value={form.status} onChange={e => set('status', e.target.value)}>
-                <option value="active">Actif</option>
-                <option value="draft">Brouillon</option>
+                {property?.status === 'active' && <option value="active">Actif</option>}
+                <option value="draft">En prospection</option>
                 <option value="sold">Vendu</option>
               </select>
+              {property?.status !== 'active' && (
+                <p className="text-xs text-gray-400 mt-1">Le passage en &quot;Actif&quot; se fait via &quot;Documents & validation&quot; une fois le dossier complet.</p>
+              )}
             </div>
           </div>
 

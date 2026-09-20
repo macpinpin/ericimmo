@@ -7,6 +7,7 @@ import type { Property, Buyer, Match, Colleague } from '@/lib/types'
 import PropertyForm from './PropertyForm'
 import BuyerForm from './BuyerForm'
 import ColleagueForm from './ColleagueForm'
+import PropertyDocumentsPanel from './PropertyDocumentsPanel'
 
 const STATUS_CONFIG = {
   hot:  { label: '🔴 Chaud', bg: 'bg-red-50 text-red-600' },
@@ -414,6 +415,7 @@ export default function DashboardPage() {
   const [properties, setProperties] = useState<Property[]>([])
   const [showPropertyForm, setShowPropertyForm] = useState(false)
   const [editProp, setEditProp] = useState<Property | null>(null)
+  const [docsProp, setDocsProp] = useState<Property | null>(null)
 
   const [buyers, setBuyers] = useState<Buyer[]>([])
   const [showBuyerForm, setShowBuyerForm] = useState(false)
@@ -749,8 +751,9 @@ export default function DashboardPage() {
                     <div className="flex items-center gap-2 flex-shrink-0">
                       {p.matterport_url && <span className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded-lg font-medium">360°</span>}
                       <span className={`text-xs px-2 py-1 rounded-lg font-medium ${p.status === 'active' ? 'bg-green-50 text-green-600' : p.status === 'sold' ? 'bg-gray-100 text-gray-500' : 'bg-yellow-50 text-yellow-600'}`}>
-                        {p.status === 'active' ? 'Actif' : p.status === 'sold' ? 'Vendu' : 'Brouillon'}
+                        {p.status === 'active' ? 'Actif' : p.status === 'sold' ? 'Vendu' : 'En prospection'}
                       </span>
+                      <button onClick={() => setDocsProp(p)} className="text-sm text-gray-400 hover:text-gray-700 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors">Documents</button>
                       <button onClick={() => { setEditProp(p); setShowPropertyForm(true) }} className="text-sm text-gray-400 hover:text-gray-700 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors">Modifier</button>
                       <button onClick={() => deleteProperty(p.id)} className="text-sm text-red-400 hover:text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors">Supprimer</button>
                     </div>
@@ -1067,6 +1070,17 @@ export default function DashboardPage() {
 
       {showPropertyForm && (
         <PropertyForm agentId={user!.id} property={editProp} onSaved={handlePropertySaved} onClose={() => { setShowPropertyForm(false); setEditProp(null) }} />
+      )}
+      {docsProp && (
+        <PropertyDocumentsPanel
+          agentId={user!.id}
+          property={docsProp}
+          onStatusChange={updated => {
+            setProperties(prev => prev.map(p => p.id === updated.id ? updated : p))
+            setDocsProp(updated)
+          }}
+          onClose={() => setDocsProp(null)}
+        />
       )}
       {showColleagueForm && (
         <ColleagueForm
