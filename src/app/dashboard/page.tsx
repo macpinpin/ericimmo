@@ -7,6 +7,33 @@ import type { Property, Buyer, Match, Colleague } from '@/lib/types'
 import PropertyForm from './PropertyForm'
 import BuyerForm from './BuyerForm'
 import ColleagueForm from './ColleagueForm'
+import ListToolbar, { applyListFilters, collectPlaces, DEFAULT_FILTERS, type ListFilters } from './ListToolbar'
+
+const PROPERTY_LIST = {
+  nameFields: (p: Property) => [p.title, p.ref],
+  placeFields: (p: Property) => [p.location, p.district, p.concelho, p.freguesia],
+  sortLabel: (p: Property) => p.title,
+}
+const BUYER_LIST = {
+  nameFields: (b: Buyer) => [b.name, b.first_name, b.last_name, b.company, b.email, b.phone],
+  // Lieu = zone de recherche de l'acheteur
+  placeFields: (b: Buyer) => [b.district, b.concelho, b.freguesia],
+  sortLabel: (b: Buyer) => `${b.last_name || b.name} ${b.first_name || ''}`,
+}
+const COLLEAGUE_LIST = {
+  nameFields: (c: Colleague) => [c.first_name, c.last_name, c.agency, c.email, c.phone],
+  placeFields: (c: Colleague) => [c.district, c.concelho],
+  sortLabel: (c: Colleague) => `${c.last_name} ${c.first_name}`,
+}
+
+function NoResults({ onReset }: { onReset: () => void }) {
+  return (
+    <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-10 text-center">
+      <p className="text-gray-500 mb-3">Aucun résultat pour ces filtres</p>
+      <button onClick={onReset} className="text-sm text-orange-500 hover:underline font-medium">Réinitialiser les filtres</button>
+    </div>
+  )
+}
 
 const STATUS_CONFIG = {
   hot:  { label: '🔴 Chaud', bg: 'bg-red-50 text-red-600' },
@@ -424,6 +451,10 @@ export default function DashboardPage() {
   const [editColleague, setEditColleague] = useState<Colleague | null>(null)
   const [expandedBuyer, setExpandedBuyer] = useState<string | null>(null)
 
+  const [propertyFilters, setPropertyFilters] = useState<ListFilters>(DEFAULT_FILTERS)
+  const [buyerListFilters, setBuyerListFilters] = useState<ListFilters>(DEFAULT_FILTERS)
+  const [colleagueFilters, setColleagueFilters] = useState<ListFilters>(DEFAULT_FILTERS)
+
   const [matches, setMatches] = useState<Match[]>([])
   const [matchFilter, setMatchFilter] = useState<'all' | 'new' | 'seen' | 'dismissed'>('new')
   const [running, setRunning] = useState(false)
@@ -448,7 +479,7 @@ export default function DashboardPage() {
   }
 
   async function loadBuyers(agentId: string) {
-    const { data } = await supabase.from('buyers').select('*').eq('agent_id', agentId).order('last_contact', { ascending: false })
+    const { data } = await supabase.from('buyers').select('*').eq('agent_id', agentId).order('created_at', { ascending: false })
     setBuyers(data || [])
   }
 
@@ -602,7 +633,10 @@ export default function DashboardPage() {
     setEditBuyer(null)
   }
 
-  const filteredBuyers = buyerFilter === 'all' ? buyers : buyers.filter(b => b.status === buyerFilter)
+  const filteredProperties = applyListFilters(properties, propertyFilters, PROPERTY_LIST)
+  const statusBuyers = buyerFilter === 'all' ? buyers : buyers.filter(b => b.status === buyerFilter)
+  const filteredBuyers = applyListFilters(statusBuyers, buyerListFilters, BUYER_LIST)
+  const filteredColleagues = applyListFilters(colleagues, colleagueFilters, COLLEAGUE_LIST)
   const filteredMatches = matchFilter === 'all' ? matches : matches.filter(m => m.status === matchFilter)
   const newMatchCount = matches.filter(m => m.status === 'new').length
 
@@ -732,8 +766,14 @@ export default function DashboardPage() {
                 </button>
               </div>
             ) : (
+              <>
+              <ListToolbar id="properties" filters={propertyFilters} onChange={setPropertyFilters}
+                searchPlaceholder="Titre ou référence" placePlaceholder="Lieu du bien"
+                places={collectPlaces(properties, PROPERTY_LIST.placeFields)}
+                total={properties.length} shown={filteredProperties.length} />
+              {filteredProperties.length === 0 ? <NoResults onReset={() => setPropertyFilters(DEFAULT_FILTERS)} /> : (
               <div className="grid gap-4">
-                {properties.map(p => (
+                {filteredProperties.map(p => (
                   <div key={p.id} className="bg-white rounded-xl border border-gray-100 p-5 flex items-center gap-5">
                     {p.images?.[0] && <img src={p.images[0]} alt={p.title} className="w-20 h-16 object-cover rounded-lg flex-shrink-0" />}
                     <div className="flex-1 min-w-0">
@@ -757,6 +797,8 @@ export default function DashboardPage() {
                   </div>
                 ))}
               </div>
+              )}
+              </>
             )}
           </>
         )}
@@ -778,7 +820,15 @@ export default function DashboardPage() {
                 + Ajouter un acheteur
               </button>
             </div>
-            {filteredBuyers.length === 0 ? (
+            {buyers.length > 0 && (
+              <ListToolbar id="buyers" filters={buyerListFilters} onChange={setBuyerListFilters}
+                searchPlaceholder="Nom, prénom, société, email…" placePlaceholder="Lieu recherché"
+                places={collectPlaces(buyers, BUYER_LIST.placeFields)}
+                total={statusBuyers.length} shown={filteredBuyers.length} />
+            )}
+            {buyers.length > 0 && filteredBuyers.length === 0 ? (
+              <NoResults onReset={() => { setBuyerListFilters(DEFAULT_FILTERS); setBuyerFilter('all') }} />
+            ) : filteredBuyers.length === 0 ? (
               <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-12 text-center">
                 <p className="text-4xl mb-3">👤</p>
                 <p className="text-gray-500 mb-4">Aucun acheteur pour l'instant</p>
@@ -893,8 +943,14 @@ export default function DashboardPage() {
                 <p className="text-gray-400 text-sm">Aucun collègue pour l'instant</p>
               </div>
             ) : (
+              <>
+              <ListToolbar id="colleagues" filters={colleagueFilters} onChange={setColleagueFilters}
+                searchPlaceholder="Nom, prénom, agence…" placePlaceholder="Zone du collègue"
+                places={collectPlaces(colleagues, COLLEAGUE_LIST.placeFields)}
+                total={colleagues.length} shown={filteredColleagues.length} />
+              {filteredColleagues.length === 0 ? <NoResults onReset={() => setColleagueFilters(DEFAULT_FILTERS)} /> : (
               <div className="grid gap-3">
-                {colleagues.map(c => {
+                {filteredColleagues.map(c => {
                   const linkedProp = properties.find(p => p.id === c.property_id)
                   return (
                     <div key={c.id} className="bg-white rounded-xl border border-gray-100 p-5 flex items-center gap-5">
@@ -938,6 +994,8 @@ export default function DashboardPage() {
                   )
                 })}
               </div>
+              )}
+              </>
             )}
           </>
         )}
