@@ -363,17 +363,23 @@ export const CMI_DOC_CSS = `
 .cmi-initials p { grid-column: 1 / -1; text-align: center; margin: -1mm 0 0 !important; letter-spacing: 2px; font-size: 6.5pt; }
 .cmi-initials .cmi-sig { height: 9mm; border: 1px solid #ddd; border-radius: 1mm; margin-top: 1mm; }
 .cmi-final-sig { display: grid; grid-template-columns: 1fr 1fr; gap: 12mm; margin-top: 4mm; font-weight: 700; }
-.cmi-final-sig .cmi-sig { height: 18mm; border-bottom: 1px solid #333; }
+.cmi-final-sig .cmi-sig { height: 14mm; border-bottom: 1px solid #333; }
 .cmi-footer { position: absolute; left: 13mm; right: 13mm; bottom: 4mm; display: flex; justify-content: space-between; gap: 4mm; font-size: 6.3pt; color: #777; border-top: 1px solid #eee; padding-top: 1mm; }
 .cmi-page:has(.cmi-initials) { padding-bottom: 34mm; }
 .cmi-editing .cmi-page { outline: 2px dashed #93c5fd; outline-offset: -1px; cursor: text; }
 .cmi-editing [contenteditable], .cmi-editing { caret-color: #2563eb; }
 @media print {
-  @page { size: A4; margin: 0; }
+  /* Safari ignore « margin: 0 » et impose ses propres marges (~6 mm) : on
+     prévoit donc 6 mm partout et une page de 280 mm, qui tient dans la zone
+     imprimable de tous les navigateurs (sinon une page blanche s'intercale). */
+  @page { size: A4; margin: 6mm; }
   html, body, main { background: #fff !important; padding: 0 !important; margin: 0 !important; min-height: 0 !important; }
   .no-print { display: none !important; }
-  /* Légèrement moins que 297 mm : sinon Safari déborde d'un pixel et insère une page blanche */
-  .cmi-page { margin: 0 !important; box-shadow: none; outline: none !important; height: 296mm; min-height: 0; overflow: hidden; page-break-after: always; break-after: page; page-break-inside: avoid; break-inside: avoid; }
+  .cmi-page { width: auto; margin: 0 !important; box-shadow: none; outline: none !important; height: 280mm; min-height: 0; overflow: hidden;
+    padding: 4mm 7mm 12mm; page-break-after: always; break-after: page; page-break-inside: avoid; break-inside: avoid; }
+  .cmi-page:has(.cmi-initials) { padding-bottom: 27mm; }
+  .cmi-initials { left: 7mm; right: 7mm; bottom: 6mm; }
+  .cmi-footer { left: 7mm; right: 7mm; bottom: 0; }
   .cmi-page:last-child { page-break-after: auto; break-after: auto; }
   .cmi-v { color: #000; }
   .cmi-v-block { color: #000; }
