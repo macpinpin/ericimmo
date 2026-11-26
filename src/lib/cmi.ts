@@ -136,6 +136,10 @@ export type CmiData = {
   angariador: { nome: string; documento: string; nif: string; telefone: string; email: string }
   foro: string
   condicoes: string
+  /** Durée du contrat en mois (clause 9), 6 par défaut. */
+  duracaoMeses: string
+  /** Version du contrat corrigée à la main sur la page d'impression. */
+  contratEditado?: { html: string; at: string }
   local: string
   data: string
   /** Dernière lecture automatique des documents (compte rendu affiché dans le dossier). */
@@ -185,6 +189,7 @@ export function emptyCmiData(consultor = ''): CmiData {
     angariador: { nome: '', documento: '', nif: '', telefone: '', email: '' },
     foro: '',
     condicoes: '',
+    duracaoMeses: '6',
     local: '',
     data: '',
   }
@@ -346,6 +351,53 @@ export function summaryColumns(d: CmiData) {
     lister_phone: d.angariador.telefone || null,
     lister_email: d.angariador.email || null,
     competent_court: d.foro || null,
+    contract_duration_months: Math.max(1, Math.round(parseAmount(d.duracaoMeses) || 6)),
     special_conditions: d.condicoes || null,
   }
+}
+
+/**
+ * Champs importants encore vides, avec la section du formulaire où les remplir.
+ * Affichés en haut du mandat et sur la page du contrat avant impression.
+ */
+export function missingFields(d: CmiData): { label: string; section: number }[] {
+  const out: { label: string; section: number }[] = []
+  const need = (ok: unknown, label: string, section: number) => { if (!ok || (typeof ok === 'string' && !ok.trim())) out.push({ label, section }) }
+  need(d.registo, 'N.º de registo', 1)
+  if (d.ownerKind === 'singular') {
+    d.owners.forEach((o, i) => {
+      const who = d.owners.length > 1 ? `propriétaire ${i + 1}` : 'propriétaire'
+      need(o.nome && o.apelidos, `Nom et prénom du ${who}`, 2)
+      need(o.naturalidade, `Naturalidade du ${who}`, 2)
+      need(o.pais, `Pays de naissance du ${who}`, 2)
+      need(o.nacionalidade, `Nationalité du ${who}`, 2)
+      need(o.morada, `Adresse du ${who}`, 2)
+      need(o.telefone, `Téléphone du ${who}`, 2)
+      need(o.email, `E-mail du ${who}`, 2)
+      need(o.docNumero, `Pièce d'identité du ${who}`, 2)
+      need(o.nif, `NIF du ${who}`, 2)
+      need(o.estadoCivil, `État civil du ${who}`, 2)
+      need(o.direito, `Nature du droit du ${who}`, 2)
+    })
+  } else {
+    need(d.empresa.firma, 'Firma de la société', 2)
+    need(d.empresa.sede, 'Siège de la société', 2)
+    need(d.empresa.representante.nome, 'Représentant de la société', 2)
+    need(d.empresa.representante.telefone, 'Téléphone du représentant', 2)
+    need(d.empresa.representante.email, 'E-mail du représentant', 2)
+  }
+  const im = d.imovel
+  need(im.destino, 'Destination du bien', 3)
+  need(im.morada, 'Adresse du bien', 3)
+  need(im.artigo, 'Artigo matricial', 3)
+  need(im.registoNumero, 'N.º de registo predial', 3)
+  need(im.certificadoNumero, 'Certificat énergétique', 3)
+  need(d.negocio.compra || d.negocio.trespasse || d.negocio.arrendamento, 'Objet (vente, trespasse, location)', 1)
+  need(parseAmount(d.preco), 'Prix', 4)
+  need(d.remuneracaoModo === 'percent' ? parseAmount(d.remuneracaoPct) : parseAmount(d.remuneracaoValor), 'Commission', 4)
+  if (d.pagamento === 'faseado') need(d.pagamentoPctCpcv && d.pagamentoPctEscritura, 'Répartition du paiement (CPCV / escritura)', 4)
+  if (!d.onusLivre) need(d.onusTipo, 'Type de charges (hipotecas / penhoras)', 4)
+  need(d.local, 'Lieu de signature', 7)
+  need(d.data, 'Date de signature', 7)
+  return out
 }
