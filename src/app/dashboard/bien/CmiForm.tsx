@@ -4,15 +4,15 @@
 
 import {
   CMI_TYPES, CMI_STATUS, DOC_CHECKLIST, emptyOwner,
-  amountToWords, percentToWords,
+  amountToWords, percentToWords, missingFields,
   type CmiData, type CmiType, type CmiStatus, type Owner, type Person,
 } from '@/lib/cmi'
 
 const inp = 'w-full border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:border-orange-400 transition-colors'
 
-function Section({ title, children, hint }: { title: string; children: React.ReactNode; hint?: string }) {
+function Section({ n, title, children, hint }: { n: number; title: string; children: React.ReactNode; hint?: string }) {
   return (
-    <section className="bg-white rounded-2xl border border-gray-100 p-6">
+    <section id={`cmi-section-${n}`} className="bg-white rounded-2xl border border-gray-100 p-6 scroll-mt-6">
       <h2 className="font-semibold text-gray-900">{title}</h2>
       {hint && <p className="text-xs text-gray-400 mt-0.5">{hint}</p>}
       <div className="mt-4 flex flex-col gap-4">{children}</div>
@@ -106,9 +106,26 @@ export default function CmiForm({ d, up, type, setType, status, setStatus }: {
   const im = d.imovel
   const setIm = <K extends keyof CmiData['imovel']>(k: K, v: CmiData['imovel'][K]) => up(x => { x.imovel[k] = v })
 
+  const missing = missingFields(d)
+
   return (
     <div className="flex flex-col gap-6">
-        <Section title="1. Type de contrat">
+      {missing.length > 0 ? (
+        <div className="bg-amber-50 border border-amber-100 rounded-2xl p-5">
+          <p className="text-sm font-semibold text-amber-800">📋 Il reste {missing.length} information{missing.length > 1 ? 's' : ''} à compléter avant de faire signer :</p>
+          <div className="flex flex-wrap gap-2 mt-3">
+            {missing.map((m, i) => (
+              <button key={i} type="button" onClick={() => document.getElementById(`cmi-section-${m.section}`)?.scrollIntoView({ behavior: 'smooth' })}
+                className="text-xs bg-white border border-amber-200 text-amber-800 hover:bg-amber-100 px-2.5 py-1 rounded-lg transition-colors">
+                {m.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="bg-green-50 border border-green-100 rounded-2xl p-4 text-sm font-medium text-green-700">✅ Toutes les informations principales sont remplies.</div>
+      )}
+        <Section n={1} title="1. Type de contrat">
           <div className="grid grid-cols-3 gap-3">
             {(Object.keys(CMI_TYPES) as CmiType[]).map(t => (
               <button key={t} type="button" onClick={() => setType(t)}
@@ -133,7 +150,7 @@ export default function CmiForm({ d, up, type, setType, status, setStatus }: {
           </div>
         </Section>
 
-        <Section title="2. Vendeur(s) – Segundo Contraente" hint="Le contrat doit être signé par tous les propriétaires (ou leur représentant par procuration).">
+        <Section n={2} title="2. Vendeur(s) – Segundo Contraente" hint="Le contrat doit être signé par tous les propriétaires (ou leur représentant par procuration).">
           <div className="flex gap-2">
             {(['singular', 'coletiva'] as const).map(k => (
               <button key={k} type="button" onClick={() => up(x => { x.ownerKind = k })}
@@ -187,7 +204,7 @@ export default function CmiForm({ d, up, type, setType, status, setStatus }: {
           )}
         </Section>
 
-        <Section title="3. Le bien – Imóvel">
+        <Section n={3} title="3. Le bien – Imóvel">
           <div className="grid grid-cols-4 gap-3">
             <Sel className="col-span-2" label="Destination" value={im.destino} onChange={v => setIm('destino', v)}
               options={[['', '—'], ['fracao', 'Habitação – Fração Autónoma'], ['predio', 'Habitação – Prédio'], ['comercial', 'Estabelecimento comercial']]} />
@@ -229,7 +246,7 @@ export default function CmiForm({ d, up, type, setType, status, setStatus }: {
           </div>
         </Section>
 
-        <Section title="4. Conditions de commercialisation">
+        <Section n={4} title="4. Conditions de commercialisation">
           <div>
             <F label="Prix (€)" value={d.preco} onChange={v => up(x => { x.preco = v })} placeholder="350000" />
             <Words text={amountToWords(d.preco)} suffix="euros" />
@@ -291,7 +308,7 @@ export default function CmiForm({ d, up, type, setType, status, setStatus }: {
           </div>
         </Section>
 
-        <Section title="5. Autres clauses" hint="Facultatif.">
+        <Section n={5} title="5. Autres clauses" hint="Facultatif.">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Angariador imobiliário (clause 4)</p>
           <div className="grid grid-cols-3 gap-3">
             <F label="Nom" value={d.angariador.nome} onChange={v => up(x => { x.angariador.nome = v })} />
@@ -300,14 +317,18 @@ export default function CmiForm({ d, up, type, setType, status, setStatus }: {
             <F label="Téléphone" value={d.angariador.telefone} onChange={v => up(x => { x.angariador.telefone = v })} />
             <F className="col-span-2" label="E-mail professionnel" value={d.angariador.email} onChange={v => up(x => { x.angariador.email = v })} />
           </div>
-          <F label="Foro da Comarca de (clause 5)" value={d.foro} onChange={v => up(x => { x.foro = v })} placeholder="Faro" />
+          <div className="grid grid-cols-3 gap-3">
+            <F label="Durée du contrat en mois (clause 9)" value={d.duracaoMeses} onChange={v => up(x => { x.duracaoMeses = v.replace(/[^0-9]/g, '') })} placeholder="6" />
+            <F className="col-span-2" label="Foro da Comarca de (clause 5)" value={d.foro} onChange={v => up(x => { x.foro = v })} placeholder="Faro" />
+          </div>
+          <p className="text-xs text-gray-400 -mt-2">Clause 9 : renouvelable automatiquement par périodes égales, sauf dénonciation 10 jours avant le terme.</p>
           <label className="block">
             <span className="block text-xs font-medium text-gray-500 mb-1">Conditions particulières (clause 12)</span>
-            <textarea className={inp} rows={3} value={d.condicoes} onChange={e => up(x => { x.condicoes = e.target.value })} />
+            <textarea className={inp} rows={4} placeholder="Ex. : Visitas apenas com aviso prévio de 24 horas. / A exclusividade vigora por um período inicial de 3 meses…" value={d.condicoes} onChange={e => up(x => { x.condicoes = e.target.value })} />
           </label>
         </Section>
 
-        <Section title="6. Documents" hint="Cochez les documents présentés et reçus (page 1 du contrat).">
+        <Section n={6} title="6. Documents" hint="Cochez les documents présentés et reçus (page 1 du contrat).">
           <div className="flex flex-col gap-2">
             <div className="grid grid-cols-[70px_70px_1fr] text-xs font-semibold text-gray-400">
               <span>Présenté</span><span>Reçu</span><span />
@@ -325,7 +346,7 @@ export default function CmiForm({ d, up, type, setType, status, setStatus }: {
           <F label="Autres documents" value={d.outrosDocs} onChange={v => up(x => { x.outrosDocs = v })} />
         </Section>
 
-        <Section title="7. Signature">
+        <Section n={7} title="7. Signature">
           <div className="grid grid-cols-3 gap-3">
             <F label="Fait à (lieu)" value={d.local} onChange={v => up(x => { x.local = v })} placeholder="Lagos" />
             <F label="Date" type="date" value={d.data} onChange={v => up(x => { x.data = v })} />

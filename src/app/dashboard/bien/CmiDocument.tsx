@@ -3,7 +3,7 @@
 
 import {
   CMI_TYPES, CMI_VERSION, MEDIADORA, DOC_CHECKLIST,
-  amountToWords, percentToWords, formatAmount, fmtDate,
+  amountToWords, percentToWords, formatAmount, fmtDate, integerToWords, parseAmount,
   type CmiData, type CmiType, type Owner, type Person,
 } from '@/lib/cmi'
 
@@ -104,6 +104,7 @@ export default function CmiDocument({ d, type }: { d: CmiData; type: CmiType }) 
   const extraOwners = owners.slice(2)
   const total = extraOwners.length ? 6 : 5
   const pct = d.remuneracaoModo === 'percent'
+  const months = Math.max(1, Math.round(parseAmount(d.duracaoMeses) || 6))
   const [dd, mm, yyyy] = (fmtDate(d.data) || '').split('/')
   const MONTHS = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro']
   const month = mm ? MONTHS[Number(mm) - 1] : ''
@@ -271,7 +272,7 @@ export default function CmiDocument({ d, type }: { d: CmiData; type: CmiType }) 
         )}
 
         <p className="cmi-h">Cláusula 9.ª – PRAZO DE DURAÇÃO DO CONTRATO</p>
-        <p className="cmi-j">O presente contrato tem uma validade de 6 meses contados a partir da data da sua celebração, renovando-se automaticamente por iguais e sucessivos períodos de tempo, caso não seja denunciado por qualquer das partes contratantes através de carta registada ou outro meio equivalente, com a antecedência mínima de 10 dias em relação ao seu termo.</p>
+        <p className="cmi-j">O presente contrato tem uma validade de {months} ({integerToWords(months)}) {months === 1 ? 'mês' : 'meses'} contados a partir da data da sua celebração, renovando-se automaticamente por iguais e sucessivos períodos de tempo, caso não seja denunciado por qualquer das partes contratantes através de carta registada ou outro meio equivalente, com a antecedência mínima de 10 dias em relação ao seu termo.</p>
 
         <p className="cmi-h">Cláusula 10.ª – LIMITES AOS PAGAMENTOS EM NUMERÁRIO</p>
         <p className="cmi-j">Os intervenientes no presente contrato de mediação imobiliária abstêm-se de celebrar ou de algum modo participar em quaisquer negócios de que resulte a violação dos limites à utilização de numerário previstos no artigo 63.º-E da Lei Geral Tributária, aprovada pelo Decreto-Lei n.º 398/98, de 17 de dezembro, aditado pela Lei n.º 92/2017, de 22 de agosto, e de acordo com o artigo 10.º da Lei n.º 83/2017, de 18 de agosto.</p>
@@ -365,11 +366,14 @@ export const CMI_DOC_CSS = `
 .cmi-final-sig .cmi-sig { height: 18mm; border-bottom: 1px solid #333; }
 .cmi-footer { position: absolute; left: 13mm; right: 13mm; bottom: 4mm; display: flex; justify-content: space-between; gap: 4mm; font-size: 6.3pt; color: #777; border-top: 1px solid #eee; padding-top: 1mm; }
 .cmi-page:has(.cmi-initials) { padding-bottom: 34mm; }
+.cmi-editing .cmi-page { outline: 2px dashed #93c5fd; outline-offset: -1px; cursor: text; }
+.cmi-editing [contenteditable], .cmi-editing { caret-color: #2563eb; }
 @media print {
   @page { size: A4; margin: 0; }
-  html, body, main { background: #fff !important; padding: 0 !important; margin: 0 !important; }
+  html, body, main { background: #fff !important; padding: 0 !important; margin: 0 !important; min-height: 0 !important; }
   .no-print { display: none !important; }
-  .cmi-page { margin: 0; box-shadow: none; page-break-after: always; break-after: page; height: 297mm; }
+  /* Légèrement moins que 297 mm : sinon Safari déborde d'un pixel et insère une page blanche */
+  .cmi-page { margin: 0 !important; box-shadow: none; outline: none !important; height: 296mm; min-height: 0; overflow: hidden; page-break-after: always; break-after: page; page-break-inside: avoid; break-inside: avoid; }
   .cmi-page:last-child { page-break-after: auto; break-after: auto; }
   .cmi-v { color: #000; }
   .cmi-v-block { color: #000; }
