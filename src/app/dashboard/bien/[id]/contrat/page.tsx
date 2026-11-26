@@ -30,7 +30,7 @@ export default function CmiPrintPage() {
     <main className="min-h-screen bg-gray-100 py-6">
       <style>{CMI_DOC_CSS}</style>
       <div className="no-print max-w-[210mm] mx-auto mb-4 flex items-center justify-between gap-3 px-2">
-        <Link href={`/dashboard/cmi/${id}`} className="text-sm text-gray-500 hover:text-gray-800">← Modifier le contrat</Link>
+        <Link href={`/dashboard/bien/${id}`} className="text-sm text-gray-500 hover:text-gray-800">← Retour au dossier</Link>
         <div className="flex items-center gap-3">
           <p className="text-xs text-gray-400 hidden sm:block">Pour un PDF : « Imprimer » puis « Enregistrer au format PDF »</p>
           <button onClick={() => window.print()} disabled={!state}

@@ -5,14 +5,20 @@ import { supabase } from '@/lib/supabase'
 import type { Property } from '@/lib/types'
 import { getDistricts, getConcelhos, getFreguesias } from '@/lib/portugal'
 
+export type PropertyPrefill = Partial<Record<'price' | 'location' | 'district' | 'concelho' | 'freguesia' | 'area_bruta_privativa' | 'type', string>>
+
 type Props = {
   agentId: string
   property: Property | null
   onSaved: (p: Property) => void
   onClose: () => void
+  /** Affiché dans une page (dossier du bien) plutôt qu'en fenêtre. */
+  inline?: boolean
+  /** Valeurs proposées pour un nouveau bien (issues du CMI). */
+  prefill?: PropertyPrefill
 }
 
-export default function PropertyForm({ agentId, property, onSaved, onClose }: Props) {
+export default function PropertyForm({ agentId, property, onSaved, onClose, inline = false, prefill = {} }: Props) {
   const [uploadedImages, setUploadedImages] = useState<string[]>(property?.images || [])
   const [uploading, setUploading] = useState(false)
   const [dragOver, setDragOver] = useState(false)
@@ -32,14 +38,14 @@ export default function PropertyForm({ agentId, property, onSaved, onClose }: Pr
   const [form, setForm] = useState({
     title: property?.title || '',
     description: property?.description || '',
-    price: property?.price?.toString() || '',
-    type: property?.type || 'villa',
+    price: property?.price?.toString() || prefill.price || '',
+    type: property?.type || (prefill.type as Property['type']) || 'villa',
     status: property?.status || 'active',
-    location: property?.location || '',
-    district: property?.district || '',
-    concelho: property?.concelho || '',
-    freguesia: property?.freguesia || '',
-    area_bruta_privativa: property?.area_bruta_privativa?.toString() || '',
+    location: property?.location || prefill.location || '',
+    district: property?.district || prefill.district || '',
+    concelho: property?.concelho || prefill.concelho || '',
+    freguesia: property?.freguesia || prefill.freguesia || '',
+    area_bruta_privativa: property?.area_bruta_privativa?.toString() || prefill.area_bruta_privativa || '',
     area_bruta_dependente: property?.area_bruta_dependente?.toString() || '',
     area_utile: property?.area_utile?.toString() || '',
     plot: property?.plot?.toString() || '',
@@ -221,14 +227,21 @@ export default function PropertyForm({ agentId, property, onSaved, onClose }: Pr
   const inputClass = "w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-orange-400 transition-colors"
   const labelClass = "block text-sm font-medium text-gray-700 mb-1"
 
-  return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl my-8">
+  const shell = (children: React.ReactNode) => inline
+    ? <div className="bg-white rounded-2xl border border-gray-100">{children}</div>
+    : (
+      <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center p-4 overflow-y-auto">
+        <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl my-8">{children}</div>
+      </div>
+    )
+
+  return shell(
+    <>
         <div className="flex items-center justify-between p-6 border-b border-gray-100">
           <h2 className="text-lg font-bold text-gray-900">
             {property ? 'Modifier le bien' : 'Ajouter un bien'}
           </h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+          {!inline && <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>}
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-5">
@@ -504,12 +517,13 @@ export default function PropertyForm({ agentId, property, onSaved, onClose }: Pr
             >
               {loading ? 'Enregistrement…' : property ? 'Enregistrer les modifications' : 'Ajouter le bien'}
             </button>
-            <button type="button" onClick={onClose} className="px-6 py-3 border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 transition-colors">
-              Annuler
-            </button>
+            {!inline && (
+              <button type="button" onClick={onClose} className="px-6 py-3 border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 transition-colors">
+                Annuler
+              </button>
+            )}
           </div>
         </form>
-      </div>
-    </div>
+    </>
   )
 }

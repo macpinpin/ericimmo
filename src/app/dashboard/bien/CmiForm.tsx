@@ -1,11 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { supabase } from '@/lib/supabase'
+// Formulaire du contrat de médiation (CMI), affiché dans le dossier du bien.
+
 import {
-  CMI_TYPES, CMI_STATUS, DOC_CHECKLIST, emptyOwner, withDefaults, summaryColumns,
+  CMI_TYPES, CMI_STATUS, DOC_CHECKLIST, emptyOwner,
   amountToWords, percentToWords,
   type CmiData, type CmiType, type CmiStatus, type Owner, type Person,
 } from '@/lib/cmi'
@@ -96,86 +94,20 @@ function PersonFields({ p, onChange }: { p: Person; onChange: (p: Person) => voi
   )
 }
 
-export default function CmiEditorPage() {
-  const router = useRouter()
-  const { id } = useParams<{ id: string }>()
-  const isNew = id === 'nouveau'
-  const [userId, setUserId] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [savedAt, setSavedAt] = useState<Date | null>(null)
-  const [error, setError] = useState('')
-  const [type, setType] = useState<CmiType>('exclusivo')
-  const [status, setStatus] = useState<CmiStatus>('draft')
-  const [d, setD] = useState<CmiData>(withDefaults(null))
-
-  useEffect(() => {
-    (async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.push('/login'); return }
-      setUserId(user.id)
-      const { data: agent } = await supabase.from('agents').select('name').eq('id', user.id).single()
-      if (isNew) {
-        setD(withDefaults(null, agent?.name || ''))
-      } else {
-        const { data: m, error } = await supabase.from('property_mandates').select('*').eq('id', id).single()
-        if (error || !m) { setError('Contrat introuvable.'); setLoading(false); return }
-        setType(m.contract_type)
-        setStatus(m.status)
-        setD(withDefaults(m.data, agent?.name || ''))
-      }
-      setLoading(false)
-    })()
-  }, [id, isNew, router])
-
-  const up = (fn: (x: CmiData) => void) => setD(prev => { const next = structuredClone(prev); fn(next); return next })
+export default function CmiForm({ d, up, type, setType, status, setStatus }: {
+  d: CmiData
+  up: (fn: (x: CmiData) => void) => void
+  type: CmiType
+  setType: (t: CmiType) => void
+  status: CmiStatus
+  setStatus: (s: CmiStatus) => void
+}) {
   const setOwner = (i: number, o: Owner) => up(x => { x.owners[i] = o })
-
-  async function save(): Promise<string | null> {
-    if (!userId) return null
-    setSaving(true)
-    setError('')
-    const row = {
-      agent_id: userId,
-      contract_type: type,
-      status,
-      data: d,
-      signed_at: status === 'signed' ? (d.data || new Date().toISOString().slice(0, 10)) : null,
-      updated_at: new Date().toISOString(),
-      ...summaryColumns(d),
-    }
-    const res = isNew
-      ? await supabase.from('property_mandates').insert(row).select('id').single()
-      : await supabase.from('property_mandates').update(row).eq('id', id).select('id').single()
-    setSaving(false)
-    if (res.error) { setError('Erreur à l\'enregistrement : ' + res.error.message); return null }
-    setSavedAt(new Date())
-    if (isNew) router.replace(`/dashboard/cmi/${res.data.id}`)
-    return res.data.id
-  }
-
-  async function saveAndPrint() {
-    const savedId = await save()
-    if (savedId) router.push(`/dashboard/cmi/${savedId}/imprimer`)
-  }
-
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><p className="text-gray-400">Chargement…</p></div>
-
   const im = d.imovel
   const setIm = <K extends keyof CmiData['imovel']>(k: K, v: CmiData['imovel'][K]) => up(x => { x.imovel[k] = v })
 
   return (
-    <main className="min-h-screen bg-gray-50 pb-28">
-      <header className="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link href="/dashboard?tab=cmi" className="text-sm text-gray-400 hover:text-gray-700">← Retour</Link>
-          <h1 className="font-bold text-gray-900">{isNew ? 'Nouveau contrat de médiation (CMI)' : 'Contrat de médiation (CMI)'}</h1>
-        </div>
-        <span className={`text-xs px-2 py-1 rounded-lg font-medium ${CMI_STATUS[status].bg}`}>{CMI_STATUS[status].label}</span>
-      </header>
-
-      <div className="max-w-4xl mx-auto px-6 py-8 flex flex-col gap-6">
-
+    <div className="flex flex-col gap-6">
         <Section title="1. Type de contrat">
           <div className="grid grid-cols-3 gap-3">
             {(Object.keys(CMI_TYPES) as CmiType[]).map(t => (
@@ -402,22 +334,6 @@ export default function CmiEditorPage() {
           </div>
           <p className="text-xs text-gray-400">Signature papier : imprimez le contrat (ou enregistrez-le en PDF), faites-le signer et parapher chaque page. La signature électronique viendra plus tard.</p>
         </Section>
-      </div>
-
-      <div className="fixed bottom-0 inset-x-0 bg-white border-t border-gray-100 px-6 py-3">
-        <div className="max-w-4xl mx-auto flex items-center justify-end gap-3">
-          {error && <p className="text-sm text-red-500 mr-auto">{error}</p>}
-          {!error && savedAt && <p className="text-xs text-gray-400 mr-auto">Enregistré à {savedAt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</p>}
-          <button type="button" onClick={save} disabled={saving}
-            className="text-sm font-semibold px-5 py-2.5 rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors">
-            {saving ? 'Enregistrement…' : 'Enregistrer'}
-          </button>
-          <button type="button" onClick={saveAndPrint} disabled={saving}
-            className="bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors">
-            📄 Voir / imprimer le contrat
-          </button>
-        </div>
-      </div>
-    </main>
+    </div>
   )
 }
