@@ -94,9 +94,11 @@ function PersonFields({ p, onChange }: { p: Person; onChange: (p: Person) => voi
   )
 }
 
-export default function CmiForm({ d, up, type, setType, status, setStatus }: {
+export default function CmiForm({ d, up, type, setType, status, setStatus, angariadorRemembered, onRememberAngariador }: {
   d: CmiData
   up: (fn: (x: CmiData) => void) => void
+  angariadorRemembered: boolean
+  onRememberAngariador: () => void
   type: CmiType
   setType: (t: CmiType) => void
   status: CmiStatus
@@ -323,6 +325,14 @@ export default function CmiForm({ d, up, type, setType, status, setStatus }: {
             <F label="Téléphone" value={d.angariador.telefone} onChange={v => up(x => { x.angariador.telefone = v })} />
             <F className="col-span-2" label="E-mail professionnel" value={d.angariador.email} onChange={v => up(x => { x.angariador.email = v })} />
           </div>}
+          <div className="flex items-center gap-3 -mt-1">
+            {angariadorRemembered
+              ? <span className="text-xs text-green-600 font-medium">✓ Mémorisé : repris automatiquement dans vos prochains contrats</span>
+              : <button type="button" onClick={onRememberAngariador}
+                  className="text-xs font-semibold text-orange-600 hover:text-orange-700 bg-orange-50 hover:bg-orange-100 px-3 py-1.5 rounded-lg transition-colors">
+                  💾 Mémoriser pour mes prochains contrats
+                </button>}
+          </div>
           <div className="grid grid-cols-3 gap-3">
             <F label="Durée du contrat en mois (clause 9)" value={d.duracaoMeses} onChange={v => up(x => { x.duracaoMeses = v.replace(/[^0-9]/g, '') })} placeholder="6" />
             <div className="col-span-2">

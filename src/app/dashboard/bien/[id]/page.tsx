@@ -13,8 +13,8 @@ import { supabase } from '@/lib/supabase'
 import type { Property } from '@/lib/types'
 import { getDistricts, getConcelhos, getFreguesias } from '@/lib/portugal'
 import {
-  CMI_STATUS, withDefaults, summaryColumns, ownersLabel, parseAmount,
-  type CmiData, type CmiType, type CmiStatus,
+  CMI_STATUS, withDefaults, summaryColumns, ownersLabel, parseAmount, applyDefaults,
+  type CmiData, type CmiType, type CmiStatus, type CmiDefaults,
 } from '@/lib/cmi'
 import { mergeExtraction, type Extraction, type MergeReport } from '@/lib/cmi-extraction'
 import CmiForm from '../CmiForm'
@@ -96,6 +96,7 @@ export default function DossierPage() {
   const [analysing, setAnalysing] = useState(false)
   const [docError, setDocError] = useState('')
 
+  const [defaults, setDefaults] = useState<CmiDefaults | null>(null)
   const [saving, setSaving] = useState(false)
   const [savedAt, setSavedAt] = useState<Date | null>(null)
   const [error, setError] = useState('')
@@ -105,15 +106,16 @@ export default function DossierPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/login'); return }
       setUserId(user.id)
-      const { data: agent } = await supabase.from('agents').select('name').eq('id', user.id).single()
+      const { data: agent } = await supabase.from('agents').select('name, cmi_defaults').eq('id', user.id).single()
+      setDefaults(agent?.cmi_defaults || null)
       if (id === 'nouveau') {
-        setD(withDefaults(null, agent?.name || ''))
+        setD(applyDefaults(withDefaults(null, agent?.name || ''), agent?.cmi_defaults))
       } else {
         const { data: m, error } = await supabase.from('property_mandates').select('*').eq('id', id).single()
         if (error || !m) { setError('Dossier introuvable.'); setLoading(false); return }
         setType(m.contract_type)
         setStatus(m.status)
-        setD(withDefaults(m.data, agent?.name || ''))
+        setD(applyDefaults(withDefaults(m.data, agent?.name || ''), agent?.cmi_defaults))
         setPropertyId(m.property_id)
         if (m.property_id) {
           const { data: p } = await supabase.from('properties').select('*').eq('id', m.property_id).single()
@@ -233,6 +235,15 @@ export default function DossierPage() {
     }
   }
 
+  /** Mémorise l'angariador (ou « sans angariador ») pour les prochains contrats. */
+  async function rememberAngariador() {
+    if (!userId) return
+    const next: CmiDefaults = { ...(defaults || {}), angariador: d.angariador, angariadorNA: d.angariadorNA }
+    const { error } = await supabase.from('agents').update({ cmi_defaults: next }).eq('id', userId)
+    if (error) { setError('Erreur : ' + error.message); return }
+    setDefaults(next)
+  }
+
   async function seeContract() {
     const mid = await save()
     if (mid) router.push(`/dashboard/bien/${mid}/contrat`)
@@ -289,7 +300,9 @@ export default function DossierPage() {
             onGoToMandate={() => setTab('mandat')} />
         )}
         {tab === 'mandat' && (
-          <CmiForm d={d} up={up} type={type} setType={setType} status={status} setStatus={setStatus} />
+          <CmiForm d={d} up={up} type={type} setType={setType} status={status} setStatus={setStatus}
+            angariadorRemembered={!!defaults && JSON.stringify({ a: defaults.angariador, n: !!defaults.angariadorNA }) === JSON.stringify({ a: d.angariador, n: d.angariadorNA })}
+            onRememberAngariador={rememberAngariador} />
         )}
         {tab === 'annonce' && userId && (
           <>
