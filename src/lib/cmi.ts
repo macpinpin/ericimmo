@@ -219,6 +219,19 @@ export function withDefaults(saved: Partial<CmiData> | null | undefined, consult
   }
 }
 
+/** Valeurs mémorisées par l'agent pour ses prochains contrats (agents.cmi_defaults). */
+export type CmiDefaults = { angariador?: CmiData['angariador']; angariadorNA?: boolean }
+
+/** Applique les valeurs mémorisées aux champs encore vides. */
+export function applyDefaults(d: CmiData, defaults: CmiDefaults | null | undefined): CmiData {
+  if (!defaults) return d
+  const empty = !d.angariadorNA && !Object.values(d.angariador).some(v => v && v.trim())
+  if (!empty) return d
+  if (defaults.angariadorNA) return { ...d, angariadorNA: true }
+  if (defaults.angariador) return { ...d, angariador: { ...d.angariador, ...defaults.angariador } }
+  return d
+}
+
 /** Nom affiché du ou des vendeurs. */
 export function ownersLabel(d: CmiData): string {
   if (d.ownerKind === 'coletiva') return d.empresa.firma
