@@ -89,41 +89,96 @@ export type Extraction = {
   alertas: string[]
 }
 
-const S = { type: 'string' } as const
-const I = { type: 'integer' } as const
-const VAL = { type: 'object', properties: { valor: S, fonte: I }, required: ['valor', 'fonte'], additionalProperties: false } as const
-const E = (values: string[]) => ({ type: 'string', enum: ['', ...values] })
-const obj = (properties: Record<string, unknown>) => ({ type: 'object', properties, required: Object.keys(properties), additionalProperties: false })
+// La réponse est demandée en JSON libre (un schéma strict de cette taille
+// dépasse la limite des sorties structurées), puis normalisée ci-dessous.
 
-const PERSON_PROPS = {
-  nome: S, apelidos: S, sexo: E(['M', 'F']), nascimento: S, naturalidade: S, pais: S, nacionalidade: S,
-  morada: S, codigoPostal: S, localidade: S, paisMorada: S,
-  docTipo: E(['cc', 'passaporte', 'bi']), docNumero: S, docValidade: S, nif: S,
-  fontes: { type: 'array', items: I },
-}
-
+const PERSON_KEYS = ['nome', 'apelidos', 'sexo', 'nascimento', 'naturalidade', 'pais', 'nacionalidade', 'morada',
+  'codigoPostal', 'localidade', 'paisMorada', 'docTipo', 'docNumero', 'docValidade', 'nif'] as const
 const IMOVEL_KEYS = ['destino', 'natureza', 'divisoes', 'area', 'morada', 'freguesia', 'concelho', 'conservatoria',
   'registoNumero', 'registoFreguesia', 'licencaNumero', 'licencaCamara', 'licencaData', 'matriz', 'artigo',
   'matrizFreguesia', 'matrizConcelho', 'certificadoNumero', 'certificadoValidade'] as const
 const EMPRESA_KEYS = ['firma', 'naturezaJuridica', 'capital', 'conservatoria', 'sede', 'qualidade'] as const
 
-export const EXTRACTION_SCHEMA = obj({
-  documentos: { type: 'array', items: obj({ indice: I, tipo: { type: 'string', enum: Object.keys(DOC_TYPES) }, resumo: S }) },
-  ownerKind: E(['singular', 'coletiva']),
-  proprietarios: {
-    type: 'array',
-    items: obj({
-      ...PERSON_PROPS,
-      estadoCivil: E(['solteiro', 'casado', 'uniao', 'divorciado', 'viuvo']),
-      regimeBens: S,
-      direito: E(['plena', 'nua', 'usufruto', 'indiviso']),
+const ENUMS: Record<string, readonly string[]> = {
+  sexo: ['M', 'F'],
+  docTipo: ['cc', 'passaporte', 'bi'],
+  estadoCivil: ['solteiro', 'casado', 'uniao', 'divorciado', 'viuvo'],
+  direito: ['plena', 'nua', 'usufruto', 'indiviso'],
+  ownerKind: ['singular', 'coletiva'],
+  situacao: ['livre', 'onerado'],
+  tipo: ['hipotecas', 'penhoras', 'ambas'],
+  destino: ['fracao', 'predio', 'comercial'],
+  natureza: ['urbano', 'rustico', 'misto'],
+  matriz: ['urbana', 'rustica'],
+}
+
+// Modèle de réponse montré à Claude
+const personTemplate = Object.fromEntries([...PERSON_KEYS.map(k => [k, '']), ['fontes', [1]]])
+const val = { valor: '', fonte: 0 }
+const TEMPLATE = {
+  documentos: [{ indice: 1, tipo: 'caderneta_predial', resumo: '' }],
+  ownerKind: '',
+  proprietarios: [{ ...personTemplate, estadoCivil: '', regimeBens: '', direito: '' }],
+  empresa: { ...Object.fromEntries(EMPRESA_KEYS.map(k => [k, val])), representante: personTemplate },
+  imovel: Object.fromEntries(IMOVEL_KEYS.map(k => [k, val])),
+  onus: { situacao: '', tipo: '', valor: '', fonte: 0 },
+  alertas: [''],
+}
+
+const str = (v: unknown) => (v == null ? '' : typeof v === 'string' ? v.trim() : typeof v === 'number' ? String(v) : '')
+const int = (v: unknown) => { const n = Number(v); return Number.isFinite(n) ? Math.trunc(n) : 0 }
+const en = <T extends string>(key: string, v: unknown) => { const x = str(v); return (ENUMS[key].includes(x) ? x : '') as T | '' }
+const asObj = (v: unknown): Record<string, unknown> => (v && typeof v === 'object' && !Array.isArray(v) ? v as Record<string, unknown> : {})
+const asArr = (v: unknown): unknown[] => (Array.isArray(v) ? v : [])
+
+function person(v: unknown): ExtractedPerson {
+  const o = asObj(v)
+  const out: Record<string, unknown> = {}
+  for (const k of PERSON_KEYS) out[k] = k === 'sexo' || k === 'docTipo' ? en(k, o[k]) : str(o[k])
+  out.fontes = asArr(o.fontes).map(int).filter(n => n > 0)
+  return out as ExtractedPerson
+}
+const valOf = (v: unknown): Val => { const o = asObj(v); return { valor: str(o.valor), fonte: int(o.fonte) } }
+
+/** Transforme la réponse JSON de Claude en Extraction complète et typée. */
+export function normalizeExtraction(raw: unknown): Extraction {
+  const r = asObj(raw)
+  const emp = asObj(r.empresa)
+  const im = asObj(r.imovel)
+  const on = asObj(r.onus)
+  return {
+    documentos: asArr(r.documentos).map(x => {
+      const o = asObj(x)
+      const tipo = str(o.tipo)
+      return { indice: int(o.indice), tipo: (tipo in DOC_TYPES ? tipo : 'outro') as DocType, resumo: str(o.resumo) }
+    }).filter(x => x.indice > 0),
+    ownerKind: en('ownerKind', r.ownerKind),
+    proprietarios: asArr(r.proprietarios).map(x => {
+      const o = asObj(x)
+      return { ...person(o), estadoCivil: en('estadoCivil', o.estadoCivil), regimeBens: str(o.regimeBens), direito: en('direito', o.direito) }
     }),
-  },
-  empresa: obj({ ...Object.fromEntries(EMPRESA_KEYS.map(k => [k, VAL])), representante: obj(PERSON_PROPS) }),
-  imovel: obj(Object.fromEntries(IMOVEL_KEYS.map(k => [k, VAL]))),
-  onus: obj({ situacao: E(['livre', 'onerado']), tipo: E(['hipotecas', 'penhoras', 'ambas']), valor: S, fonte: I }),
-  alertas: { type: 'array', items: S },
-})
+    empresa: {
+      ...(Object.fromEntries(EMPRESA_KEYS.map(k => [k, valOf(emp[k])])) as Record<typeof EMPRESA_KEYS[number], Val>),
+      representante: person(emp.representante),
+    },
+    imovel: Object.fromEntries(IMOVEL_KEYS.map(k => {
+      const v = valOf(im[k])
+      if (k in ENUMS) v.valor = en(k, v.valor)
+      return [k, v]
+    })) as Extraction['imovel'],
+    onus: { situacao: en('situacao', on.situacao), tipo: en('tipo', on.tipo), valor: str(on.valor), fonte: int(on.fonte) },
+    alertas: asArr(r.alertas).map(str).filter(Boolean),
+  }
+}
+
+/** Récupère l'objet JSON d'une réponse texte (éventuellement entourée de ```json). */
+export function parseJsonReply(text: string): unknown {
+  const fenced = /```(?:json)?\s*([\s\S]*?)```/.exec(text)
+  const body = fenced ? fenced[1] : text
+  const start = body.indexOf('{'), end = body.lastIndexOf('}')
+  if (start < 0 || end < start) throw new Error('Réponse illisible')
+  return JSON.parse(body.slice(start, end + 1))
+}
 
 export const EXTRACTION_PROMPT = `Tu es l'assistant d'un agent immobilier au Portugal. Il prépare un Contrato de Mediação Imobiliária (CMI) et t'a transmis les documents du dossier, numérotés (Documento 1, 2, …).
 
@@ -141,7 +196,12 @@ Règles :
 - Dates au format AAAA-MM-JJ.
 - Montants et surfaces en chiffres, sans unité (ex. « 125.5 »).
 - « fonte » / « fontes » = numéro(s) du ou des documents d'où vient l'information (0 si aucune).
-- N'invente rien : si une information n'apparaît pas clairement, laisse une chaîne vide "".`
+- N'invente rien : si une information n'apparaît pas clairement, laisse une chaîne vide "".
+
+Valeurs autorisées : documentos[].tipo ∈ ${Object.keys(DOC_TYPES).filter(k => k !== 'a_classer').join(', ')} ; ownerKind ∈ singular, coletiva ; sexo ∈ M, F ; docTipo ∈ cc, passaporte, bi ; estadoCivil ∈ solteiro, casado, uniao, divorciado, viuvo ; direito ∈ plena, nua, usufruto, indiviso ; onus.situacao ∈ livre, onerado ; onus.tipo ∈ hipotecas, penhoras, ambas ; ou "" si inconnu.
+
+Réponds uniquement avec un objet JSON (sans texte autour) qui suit exactement cette structure :
+${JSON.stringify(TEMPLATE)}`
 
 // ── Fusion dans le formulaire ───────────────────────────────────────────
 

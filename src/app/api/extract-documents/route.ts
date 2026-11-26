@@ -1,7 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
-import { EXTRACTION_PROMPT, EXTRACTION_SCHEMA, DOC_TYPES, type Extraction } from '@/lib/cmi-extraction'
+import { EXTRACTION_PROMPT, DOC_TYPES, normalizeExtraction, parseJsonReply, type Extraction } from '@/lib/cmi-extraction'
 
 // Lecture des documents d'un dossier (CMI) par Claude.
 // Les fichiers restent dans le bucket privé « property-documents » : la route
@@ -67,7 +67,7 @@ export async function POST(req: Request) {
     const message = await anthropic.beta.messages.stream({
       model: 'claude-opus-5-5',
       max_tokens: 32000,
-      output_config: { effort: 'medium', format: { type: 'json_schema', schema: EXTRACTION_SCHEMA } },
+      output_config: { effort: 'medium' },
       messages: [{ role: 'user', content }],
     }).finalMessage()
 
@@ -78,10 +78,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Réponse incomplète (trop de documents). Réessayez avec moins de documents.' }, { status: 422 })
     }
     const text = message.content.flatMap(b => (b.type === 'text' ? [b.text] : [])).join('')
-    extraction = JSON.parse(text)
+    try {
+      extraction = normalizeExtraction(parseJsonReply(text))
+    } catch {
+      return NextResponse.json({ error: 'La réponse de la lecture est illisible. Réessayez.' }, { status: 502 })
+    }
   } catch (e) {
     if (e instanceof Anthropic.RateLimitError) return NextResponse.json({ error: 'Service de lecture saturé, réessayez dans une minute.' }, { status: 429 })
-    if (e instanceof Anthropic.APIError) return NextResponse.json({ error: `Erreur du service de lecture (${e.status}) : ${e.message}` }, { status: 502 })
+    if (e instanceof Anthropic.APIError) {
+      console.error('extract-documents', e.status, e.message)
+      return NextResponse.json({ error: `Erreur du service de lecture (${e.status}). Réessayez ; si l'erreur persiste, signalez-la.` }, { status: 502 })
+    }
     return NextResponse.json({ error: 'Erreur de lecture : ' + (e instanceof Error ? e.message : 'inconnue') }, { status: 500 })
   }
 
