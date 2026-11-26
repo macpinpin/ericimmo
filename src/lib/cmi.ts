@@ -34,7 +34,7 @@ export const MEDIADORA = {
   policy: 'RC78589672',
   insuredCapital: '150.000 €',
   email: 'contacto@safti.pt',
-  color: '#e30613',
+  color: '#EC6A1F',
 }
 
 export type Person = {
