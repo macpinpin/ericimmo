@@ -371,18 +371,28 @@ export const CMI_DOC_CSS = `
 .cmi-editing .cmi-page { outline: 2px dashed #93c5fd; outline-offset: -1px; cursor: text; }
 .cmi-editing [contenteditable], .cmi-editing { caret-color: #2563eb; }
 @media print {
-  /* Safari ignore « margin: 0 » et impose ses propres marges (~6 mm) : on
-     prévoit donc 6 mm partout et une page de 280 mm, qui tient dans la zone
-     imprimable de tous les navigateurs (sinon une page blanche s'intercale). */
+  /* Les navigateurs n'ont pas tous la même zone imprimable (Safari garde
+     des marges plus grandes, surtout en bas). Aucune hauteur fixe donc :
+     chaque page du contrat s'écoule normalement, avec une hauteur minimale
+     qui tient partout, et le bloc signatures + pied de page la termine. */
   @page { size: A4; margin: 6mm; }
   html, body, main { background: #fff !important; padding: 0 !important; margin: 0 !important; min-height: 0 !important; }
   .no-print { display: none !important; }
-  .cmi-page { width: auto; margin: 0 !important; box-shadow: none; outline: none !important; height: 280mm; min-height: 0; overflow: hidden;
-    padding: 4mm 7mm 12mm; page-break-after: always; break-after: page; page-break-inside: avoid; break-inside: avoid; }
-  .cmi-page:has(.cmi-initials) { padding-bottom: 27mm; }
-  .cmi-initials { left: 7mm; right: 7mm; bottom: 6mm; }
-  .cmi-footer { left: 7mm; right: 7mm; bottom: 0; }
+  .cmi-page { width: auto; height: auto; min-height: 240mm; margin: 0 !important; padding: 2mm 7mm 0 !important; box-shadow: none; outline: none !important;
+    overflow: visible; display: flex; flex-direction: column; page-break-after: always; break-after: page; }
   .cmi-page:last-child { page-break-after: auto; break-after: auto; }
+  .cmi-page { font-size: 8.2pt; line-height: 1.38; }
+  .cmi-small { font-size: 6.9pt; line-height: 1.32; }
+  .cmi-page p { margin-bottom: 1mm; }
+  .cmi-h { margin-top: 1.8mm !important; }
+  .cmi-initials .cmi-sig { height: 7mm; }
+  .cmi-final-sig { margin-top: 2mm; }
+  .cmi-final-sig .cmi-sig { height: 12mm; }
+  .cmi-initials { position: static; margin-top: auto; padding-top: 4mm; page-break-inside: avoid; break-inside: avoid; }
+  .cmi-initials p { margin-top: 1mm !important; }
+  .cmi-footer { position: static; margin-top: 2mm; }
+  .cmi-page:not(:has(.cmi-initials)) .cmi-footer { margin-top: auto; }
+  .cmi-final-sig { page-break-inside: avoid; break-inside: avoid; }
   .cmi-v { color: #000; }
   .cmi-v-block { color: #000; }
 }
