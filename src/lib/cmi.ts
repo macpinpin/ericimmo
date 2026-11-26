@@ -138,6 +138,11 @@ export type CmiData = {
   condicoes: string
   /** Durée du contrat en mois (clause 9), 6 par défaut. */
   duracaoMeses: string
+  /** Clauses facultatives explicitement « sans objet » (imprimées « — »). */
+  foroNA: boolean
+  angariadorNA: boolean
+  /** Bien inscrit avant 1951 : dispensé de licença de utilização. */
+  licencaIsenta: boolean
   /** Version du contrat corrigée à la main sur la page d'impression. */
   contratEditado?: { html: string; at: string }
   local: string
@@ -190,6 +195,9 @@ export function emptyCmiData(consultor = ''): CmiData {
     foro: '',
     condicoes: '',
     duracaoMeses: '6',
+    foroNA: false,
+    angariadorNA: false,
+    licencaIsenta: false,
     local: '',
     data: '',
   }
@@ -363,40 +371,82 @@ export function summaryColumns(d: CmiData) {
 export function missingFields(d: CmiData): { label: string; section: number }[] {
   const out: { label: string; section: number }[] = []
   const need = (ok: unknown, label: string, section: number) => { if (!ok || (typeof ok === 'string' && !ok.trim())) out.push({ label, section }) }
+  const person = (p: Person, who: string) => {
+    need(p.nome && p.apelidos, `Nom et prénom du ${who}`, 2)
+    need(p.civ, `Sr. / Sra. du ${who}`, 2)
+    need(p.nascimento, `Date de naissance du ${who}`, 2)
+    need(p.naturalidade, `Naturalidade du ${who}`, 2)
+    need(p.pais, `Pays de naissance du ${who}`, 2)
+    need(p.nacionalidade, `Nationalité du ${who}`, 2)
+    need(p.morada, `Adresse du ${who}`, 2)
+    need(p.codigoPostal, `Code postal du ${who}`, 2)
+    need(p.localidade, `Localité du ${who}`, 2)
+    need(p.paisMorada, `Pays de résidence du ${who}`, 2)
+    need(p.telefone, `Téléphone du ${who}`, 2)
+    need(p.email, `E-mail du ${who}`, 2)
+    need(p.docTipo && p.docNumero, `Pièce d'identité du ${who}`, 2)
+    need(p.docValidade, `Validité de la pièce du ${who}`, 2)
+    need(p.nif, `NIF du ${who}`, 2)
+  }
+
   need(d.registo, 'N.º de registo', 1)
+  need(d.consultor, 'Nom du consultor', 1)
+  need(d.negocio.compra || d.negocio.trespasse || d.negocio.arrendamento, 'Objet (vente, trespasse, location)', 1)
+
   if (d.ownerKind === 'singular') {
     d.owners.forEach((o, i) => {
       const who = d.owners.length > 1 ? `propriétaire ${i + 1}` : 'propriétaire'
-      need(o.nome && o.apelidos, `Nom et prénom du ${who}`, 2)
-      need(o.naturalidade, `Naturalidade du ${who}`, 2)
-      need(o.pais, `Pays de naissance du ${who}`, 2)
-      need(o.nacionalidade, `Nationalité du ${who}`, 2)
-      need(o.morada, `Adresse du ${who}`, 2)
-      need(o.telefone, `Téléphone du ${who}`, 2)
-      need(o.email, `E-mail du ${who}`, 2)
-      need(o.docNumero, `Pièce d'identité du ${who}`, 2)
-      need(o.nif, `NIF du ${who}`, 2)
+      person(o, who)
       need(o.estadoCivil, `État civil du ${who}`, 2)
+      if (o.estadoCivil === 'casado') need(o.regimeBens, `Régime matrimonial du ${who}`, 2)
       need(o.direito, `Nature du droit du ${who}`, 2)
     })
   } else {
     need(d.empresa.firma, 'Firma de la société', 2)
+    need(d.empresa.naturezaJuridica, 'Forme juridique de la société', 2)
+    need(d.empresa.capital, 'Capital social', 2)
+    need(d.empresa.conservatoria, 'Conservatória du registo comercial', 2)
     need(d.empresa.sede, 'Siège de la société', 2)
-    need(d.empresa.representante.nome, 'Représentant de la société', 2)
-    need(d.empresa.representante.telefone, 'Téléphone du représentant', 2)
-    need(d.empresa.representante.email, 'E-mail du représentant', 2)
+    need(d.empresa.qualidade, 'Qualité du représentant', 2)
+    person(d.empresa.representante, 'représentant')
   }
+
   const im = d.imovel
   need(im.destino, 'Destination du bien', 3)
+  need(im.natureza, 'Nature (urbano / rústico / misto)', 3)
+  need(im.divisoes, 'Divisões assoalhadas', 3)
+  need(im.area, 'Surface totale', 3)
   need(im.morada, 'Adresse du bien', 3)
-  need(im.artigo, 'Artigo matricial', 3)
+  need(im.freguesia, 'Freguesia du bien', 3)
+  need(im.concelho, 'Concelho du bien', 3)
+  need(im.conservatoria, 'Conservatória do registo predial', 3)
   need(im.registoNumero, 'N.º de registo predial', 3)
-  need(im.certificadoNumero, 'Certificat énergétique', 3)
-  need(d.negocio.compra || d.negocio.trespasse || d.negocio.arrendamento, 'Objet (vente, trespasse, location)', 1)
+  need(im.registoFreguesia, 'Freguesia du registo predial', 3)
+  if (!d.licencaIsenta) {
+    need(im.licencaNumero, 'N.º de licença de utilização (ou « isento »)', 3)
+    need(im.licencaCamara, 'Câmara de la licença', 3)
+    need(im.licencaData, 'Date de la licença', 3)
+  }
+  need(im.matriz, 'Matriz (urbana / rústica)', 3)
+  need(im.artigo, 'Artigo matricial', 3)
+  need(im.matrizFreguesia, 'Freguesia de la matriz', 3)
+  need(im.matrizConcelho, 'Concelho de la matriz', 3)
+  need(im.certificadoNumero, 'N.º du certificat énergétique', 3)
+  need(im.certificadoValidade, 'Validité du certificat énergétique', 3)
+
   need(parseAmount(d.preco), 'Prix', 4)
+  if (d.servicoDocs) need(parseAmount(d.servicoDocsValor), 'Montant du service de documents', 4)
+  if (!d.onusLivre) {
+    need(d.onusTipo, 'Type de charges (hipotecas / penhoras)', 4)
+    need(parseAmount(d.onusValor), 'Montant des charges', 4)
+  }
   need(d.remuneracaoModo === 'percent' ? parseAmount(d.remuneracaoPct) : parseAmount(d.remuneracaoValor), 'Commission', 4)
   if (d.pagamento === 'faseado') need(d.pagamentoPctCpcv && d.pagamentoPctEscritura, 'Répartition du paiement (CPCV / escritura)', 4)
-  if (!d.onusLivre) need(d.onusTipo, 'Type de charges (hipotecas / penhoras)', 4)
+
+  if (!d.angariadorNA) need(d.angariador.nome && d.angariador.documento && d.angariador.nif, 'Angariador (ou « sans angariador »)', 5)
+  if (!d.foroNA) need(d.foro, 'Foro competente (ou « sans foro »)', 5)
+  need(parseAmount(d.duracaoMeses), 'Durée du contrat', 5)
+
   need(d.local, 'Lieu de signature', 7)
   need(d.data, 'Date de signature', 7)
   return out

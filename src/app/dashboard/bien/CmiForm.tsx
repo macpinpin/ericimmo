@@ -226,12 +226,15 @@ export default function CmiForm({ d, up, type, setType, status, setStatus }: {
             <F label="Sob o n.º" value={im.registoNumero} onChange={v => setIm('registoNumero', v)} />
             <F label="Da freguesia" value={im.registoFreguesia} onChange={v => setIm('registoFreguesia', v)} />
           </div>
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mt-2">Licence de construction / utilisation</p>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="flex items-center justify-between mt-2">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Licence de construction / utilisation</p>
+            <Check label="Isento (inscrit à la matrice avant 1951)" checked={d.licencaIsenta} onChange={v => up(x => { x.licencaIsenta = v })} />
+          </div>
+          {!d.licencaIsenta && <div className="grid grid-cols-3 gap-3">
             <F label="N.º" value={im.licencaNumero} onChange={v => setIm('licencaNumero', v)} />
             <F label="Câmara Municipal de" value={im.licencaCamara} onChange={v => setIm('licencaCamara', v)} />
             <F label="Émise le" type="date" value={im.licencaData} onChange={v => setIm('licencaData', v)} />
-          </div>
+          </div>}
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mt-2">Matriz predial (caderneta)</p>
           <div className="grid grid-cols-4 gap-3">
             <Sel label="Matriz" value={im.matriz} onChange={v => setIm('matriz', v)} options={[['', '—'], ['urbana', 'Urbana'], ['rustica', 'Rústica']]} />
@@ -308,18 +311,26 @@ export default function CmiForm({ d, up, type, setType, status, setStatus }: {
           </div>
         </Section>
 
-        <Section n={5} title="5. Autres clauses" hint="Facultatif.">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Angariador imobiliário (clause 4)</p>
-          <div className="grid grid-cols-3 gap-3">
+        <Section n={5} title="5. Autres clauses" hint="Pour une clause qui ne s'applique pas, cochez « sans objet » : le contrat affichera « — » au lieu de pointillés.">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Angariador imobiliário (clause 4)</p>
+            <Check label="Sans angariador" checked={d.angariadorNA} onChange={v => up(x => { x.angariadorNA = v })} />
+          </div>
+          {!d.angariadorNA && <div className="grid grid-cols-3 gap-3">
             <F label="Nom" value={d.angariador.nome} onChange={v => up(x => { x.angariador.nome = v })} />
             <F label="CC / BI n.º" value={d.angariador.documento} onChange={v => up(x => { x.angariador.documento = v })} />
             <F label="NIF" value={d.angariador.nif} onChange={v => up(x => { x.angariador.nif = v })} />
             <F label="Téléphone" value={d.angariador.telefone} onChange={v => up(x => { x.angariador.telefone = v })} />
             <F className="col-span-2" label="E-mail professionnel" value={d.angariador.email} onChange={v => up(x => { x.angariador.email = v })} />
-          </div>
+          </div>}
           <div className="grid grid-cols-3 gap-3">
             <F label="Durée du contrat en mois (clause 9)" value={d.duracaoMeses} onChange={v => up(x => { x.duracaoMeses = v.replace(/[^0-9]/g, '') })} placeholder="6" />
-            <F className="col-span-2" label="Foro da Comarca de (clause 5)" value={d.foro} onChange={v => up(x => { x.foro = v })} placeholder="Faro" />
+            <div className="col-span-2">
+              {d.foroNA
+                ? <p className="text-xs text-gray-400 mt-6">Foro competente : sans objet (clause facultative)</p>
+                : <F label="Foro da Comarca de (clause 5, facultative)" value={d.foro} onChange={v => up(x => { x.foro = v })} placeholder="Portimão" />}
+              <div className="mt-1"><Check label="Sans foro" checked={d.foroNA} onChange={v => up(x => { x.foroNA = v })} /></div>
+            </div>
           </div>
           <p className="text-xs text-gray-400 -mt-2">Clause 9 : renouvelable automatiquement par périodes égales, sauf dénonciation 10 jours avant le terme.</p>
           <label className="block">
