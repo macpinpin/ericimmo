@@ -138,6 +138,13 @@ export type CmiData = {
   condicoes: string
   local: string
   data: string
+  /** Dernière lecture automatique des documents (compte rendu affiché dans le dossier). */
+  lecture?: {
+    at: string
+    filled: { field: string; source: string }[]
+    conflicts: { field: string; current: string; found: string; source: string }[]
+    alertas: string[]
+  }
 }
 
 export const emptyPerson = (): Person => ({
