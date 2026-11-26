@@ -7,9 +7,10 @@ import {
   type CmiData, type CmiType, type Owner, type Person,
 } from '@/lib/cmi'
 
-/** Valeur insérée dans le texte, ou pointillés si vide. */
-function V({ v, w = 24 }: { v?: string | null; w?: number }) {
+/** Valeur insérée dans le texte ; « — » si sans objet ; sinon pointillés à remplir. */
+function V({ v, w = 24, na = false }: { v?: string | null; w?: number; na?: boolean }) {
   if (v && v.trim()) return <span className="cmi-v">{v}</span>
+  if (na) return <span className="cmi-na">—</span>
   return <span className="cmi-blank" style={{ minWidth: `${w}mm` }} />
 }
 
@@ -81,7 +82,7 @@ function OwnerBlock({ o, n }: { o: Owner; n: number }) {
       <PersonBlock p={o} />
       <p>Estado Civil:{' '}
         <Opt on={o.estadoCivil === 'solteiro'}>Solteiro</Opt>{' '}
-        <Opt on={o.estadoCivil === 'casado'}>Casado sob o regime de bens: <V v={o.estadoCivil === 'casado' ? o.regimeBens : ''} w={30} /></Opt>{' '}
+        <Opt on={o.estadoCivil === 'casado'}>Casado sob o regime de bens: <V v={o.estadoCivil === 'casado' ? o.regimeBens : ''} w={30} na={!!o.estadoCivil && o.estadoCivil !== 'casado'} /></Opt>{' '}
         <Opt on={o.estadoCivil === 'uniao'}>União de Facto</Opt>{' '}
         <Opt on={o.estadoCivil === 'divorciado'}>Divorciado</Opt>{' '}
         <Opt on={o.estadoCivil === 'viuvo'}>Viúvo</Opt>
@@ -134,7 +135,7 @@ export default function CmiDocument({ d, type }: { d: CmiData; type: CmiType }) 
           </tbody>
         </table>
         <p className="cmi-label">Outros documentos:</p>
-        <p><V v={d.outrosDocs} w={150} /></p>
+        <p><V v={d.outrosDocs} w={150} na /></p>
         <Initials />
         <Footer type={type} page={1} total={total} />
       </div>
@@ -195,7 +196,7 @@ export default function CmiDocument({ d, type }: { d: CmiData; type: CmiType }) 
           constituído por <V v={im.divisoes} w={10} /> divisões assoalhadas, com área total de <V v={im.area} w={14} /> m²,
           sito na (Rua, Avenida) <V v={im.morada} w={60} />, (freguesia) <V v={im.freguesia} />, (concelho) <V v={im.concelho} />,
           descrito na Conservatória do Registo Predial de <V v={im.conservatoria} />, sob o n.º <V v={im.registoNumero} w={14} />, da freguesia <V v={im.registoFreguesia} />,
-          com Licença de construção/utilização n.º: <V v={im.licencaNumero} w={14} /> emitida pela Câmara Municipal de <V v={im.licencaCamara} /> em <V v={fmtDate(im.licencaData)} w={18} />
+          com Licença de construção/utilização n.º: <V v={d.licencaIsenta ? 'isento' : im.licencaNumero} w={14} /> emitida pela Câmara Municipal de <V v={im.licencaCamara} na={d.licencaIsenta} /> em <V v={fmtDate(im.licencaData)} w={18} na={d.licencaIsenta} />
           {' '}e inscrito na matriz predial ( <Opt on={im.matriz === 'urbana'}>urbana</Opt> / <Opt on={im.matriz === 'rustica'}>rústica</Opt> ), com o artigo n.º <V v={im.artigo} w={14} /> da freguesia de <V v={im.matrizFreguesia} />, concelho
           de <V v={im.matrizConcelho} />, e com certificado energético n.º <V v={im.certificadoNumero} />, válido até <V v={fmtDate(im.certificadoValidade)} w={18} />, doravante designado por “Imóvel”;
         </p>
@@ -210,33 +211,33 @@ export default function CmiDocument({ d, type }: { d: CmiData; type: CmiType }) 
           desenvolvendo, para o efeito, ações de promoção e recolha de informações sobre os negócios pretendidos e características dos respetivos imóveis.</p>
         <p className="cmi-j">3. Qualquer alteração ao preço determinado no número precedente deverá ser comunicada de imediato e por escrito à Mediadora.</p>
         <p className="cmi-j">4. (eventual) Para além dos serviços mencionados no n.º 2 da presente Cláusula, a Mediadora poderá também prestar serviços de recolha de documentação relativa ao imóvel e às Partes interessadas, mediante retribuição no valor de
-          Quantia <V v={d.servicoDocs ? formatAmount(d.servicoDocsValor) : ''} w={24} /> € — Por extenso <V v={d.servicoDocs ? amountToWords(d.servicoDocsValor) : ''} w={60} /> Euros</p>
+          Quantia <V v={d.servicoDocs ? formatAmount(d.servicoDocsValor) : ''} w={24} na={!d.servicoDocs} /> € — Por extenso <V v={d.servicoDocs ? amountToWords(d.servicoDocsValor) : ''} w={60} na={!d.servicoDocs} /> Euros</p>
 
         <p className="cmi-h">Cláusula 2.ª – ÓNUS OU ENCARGOS</p>
         <p><Opt on={d.onusLivre}>O Imóvel encontra-se livre de ónus ou encargos.</Opt></p>
         <p className="cmi-j"><Opt on={!d.onusLivre}>O Segundo Contraente declara que sobre o imóvel descrito no número anterior recaem os seguintes ónus e encargos</Opt>{' '}
           <Opt on={!d.onusLivre && d.onusTipo === 'hipotecas'}>hipotecas</Opt> / <Opt on={!d.onusLivre && d.onusTipo === 'penhoras'}>penhoras</Opt> / <Opt on={!d.onusLivre && d.onusTipo === 'ambas'}>hipotecas e penhoras</Opt>{' '}
-          Pelo valor <V v={!d.onusLivre ? formatAmount(d.onusValor) : ''} w={30} /> €</p>
+          Pelo valor <V v={!d.onusLivre ? formatAmount(d.onusValor) : ''} w={30} na={d.onusLivre} /> €</p>
 
         <p className="cmi-h">Cláusula 3.ª – REMUNERAÇÃO</p>
         <p className="cmi-j">1. A remuneração só será devida se a Mediadora conseguir interessado que concretize o negócio visado pelo presente contrato, nos termos e com as exceções previstas no artigo 19.º da Lei n.º 15/2013, de 8 de fevereiro.</p>
         <p className="cmi-j">2. O Segundo Contraente obriga-se a pagar à Mediadora a título de remuneração:{' '}
-          <Opt on={pct}><V v={pct ? d.remuneracaoPct : ''} w={10} /> % do preço pelo qual o negócio é efetivamente concretizado (por extenso <V v={pct ? percentToWords(d.remuneracaoPct) : ''} w={30} /> %)</Opt>{' '}
-          Ou <Opt on={!pct}>A quantia de <V v={!pct ? formatAmount(d.remuneracaoValor) : ''} w={20} /> € (por extenso <V v={!pct ? amountToWords(d.remuneracaoValor) : ''} w={40} /> euros)</Opt></p>
+          <Opt on={pct}><V v={pct ? d.remuneracaoPct : ''} w={10} na={!pct} /> % do preço pelo qual o negócio é efetivamente concretizado (por extenso <V v={pct ? percentToWords(d.remuneracaoPct) : ''} w={30} na={!pct} /> %)</Opt>{' '}
+          Ou <Opt on={!pct}>A quantia de <V v={!pct ? formatAmount(d.remuneracaoValor) : ''} w={20} na={pct} /> € (por extenso <V v={!pct ? amountToWords(d.remuneracaoValor) : ''} w={40} na={pct} /> euros)</Opt></p>
         <p className="cmi-j">3. Aos valores acima indicados, acresce IVA à taxa legal em vigor.</p>
         <p className="cmi-j">4. O pagamento da remuneração apenas será efetuado nas seguintes condições:{' '}
           <Opt on={d.pagamento === 'escritura'}>O total da remuneração aquando da celebração da escritura ou conclusão do negócio visado.</Opt>{' '}
-          <Opt on={d.pagamento === 'faseado'}><V v={d.pagamento === 'faseado' ? d.pagamentoPctCpcv : ''} w={10} /> % após a celebração do contrato-promessa e o remanescente de <V v={d.pagamento === 'faseado' ? d.pagamentoPctEscritura : ''} w={10} /> % com a celebração da escritura ou conclusão do negócio.</Opt></p>
+          <Opt on={d.pagamento === 'faseado'}><V v={d.pagamento === 'faseado' ? d.pagamentoPctCpcv : ''} w={10} na={d.pagamento !== 'faseado'} /> % após a celebração do contrato-promessa e o remanescente de <V v={d.pagamento === 'faseado' ? d.pagamentoPctEscritura : ''} w={10} na={d.pagamento !== 'faseado'} /> % com a celebração da escritura ou conclusão do negócio.</Opt></p>
         <p className="cmi-j">5. O direito à remuneração não é afastado pelo exercício de direito legal ou contratual de preferência sobre o imóvel.</p>
 
         <p className="cmi-h">Cláusula 4.ª – ANGARIADOR IMOBILIÁRIO</p>
-        <p className="cmi-j">Na preparação do presente contrato de mediação imobiliária colaborou o Angariador Imobiliário (nome) <V v={d.angariador.nome} w={50} />, portador do
-          Cartão de Cidadão/Bilhete de Identidade n.º <V v={d.angariador.documento} /> e titular do NIF <V v={d.angariador.nif} />
-          {' '}Telefone: <V v={d.angariador.telefone} /> E-mail profissional <V v={d.angariador.email} w={40} /></p>
+        <p className="cmi-j">Na preparação do presente contrato de mediação imobiliária colaborou o Angariador Imobiliário (nome) <V v={d.angariadorNA ? '' : d.angariador.nome} w={50} na={d.angariadorNA} />, portador do
+          Cartão de Cidadão/Bilhete de Identidade n.º <V v={d.angariadorNA ? '' : d.angariador.documento} na={d.angariadorNA} /> e titular do NIF <V v={d.angariadorNA ? '' : d.angariador.nif} na={d.angariadorNA} />
+          {' '}Telefone: <V v={d.angariadorNA ? '' : d.angariador.telefone} na={d.angariadorNA} /> E-mail profissional <V v={d.angariadorNA ? '' : d.angariador.email} w={40} na={d.angariadorNA} /></p>
 
         <p className="cmi-h">Cláusula 5.ª – FORO COMPETENTE</p>
         <p className="cmi-j">Para dirimirem quaisquer litígios emergentes da execução do presente contrato, as partes acordam entre si estabelecer como competente o Foro da Comarca de
-          {' '}<V v={d.foro} />, com a expressa renúncia a qualquer outro. (Esta cláusula é facultativa e só deverá ser preenchida se as partes assim o pretenderem e acordarem.)</p>
+          {' '}<V v={d.foroNA ? '' : d.foro} na={d.foroNA} />, com a expressa renúncia a qualquer outro. (Esta cláusula é facultativa e só deverá ser preenchida se as partes assim o pretenderem e acordarem.)</p>
 
         <p className="cmi-h">Cláusula 6.ª – OBTENÇÃO DE DOCUMENTOS</p>
         <p className="cmi-j">1. A Mediadora, na qualidade de mandatária sem representação e sem prejuízo do dever de colaboração do Segundo Contraente, presta os serviços conducentes à obtenção da documentação necessária à concretização do negócio visado pelo presente Contrato.</p>
@@ -284,7 +285,7 @@ export default function CmiDocument({ d, type }: { d: CmiData; type: CmiType }) 
         <p className="cmi-h">Cláusula 12.ª – CONDIÇÕES PARTICULARES</p>
         {d.condicoes.trim()
           ? <p className="cmi-j cmi-v-block">{d.condicoes}</p>
-          : <><p><V w={180} /></p><p><V w={180} /></p></>}
+          : <p><V na /></p>}
 
         <p className="cmi-h">Cláusula 13.ª – PROTEÇÃO DE DADOS PESSOAIS</p>
         <p className="cmi-j">1. Em cumprimento do disposto no Regulamento (UE) 2016/679 do Parlamento Europeu e do Conselho, de 27 de abril de 2016 (Regulamento Geral sobre a Proteção de Dados – RGPD), e na legislação conexa, no que diz respeito ao tratamento de dados pessoais e à livre circulação desses dados, o Segundo Contraente autoriza que os seus dados pessoais recolhidos, transmitidos ou processados informaticamente pela Mediadora sejam incorporados na sua base de dados.</p>
@@ -352,6 +353,7 @@ export const CMI_DOC_CSS = `
 .cmi-party { border-left: 2px solid #eee; padding-left: 3mm; margin: 1mm 0 2mm; }
 .cmi-v { font-weight: 700; color: #0b2a6f; border-bottom: 1px dotted #999; padding: 0 1px; }
 .cmi-v-block { font-weight: 600; color: #0b2a6f; white-space: pre-wrap; }
+.cmi-na { font-weight: 700; padding: 0 2mm; }
 .cmi-blank { display: inline-block; border-bottom: 1px dotted #777; height: 1em; vertical-align: baseline; }
 .cmi-box { display: inline-flex; width: 3mm; height: 3mm; border: 1px solid #333; align-items: center; justify-content: center; font-size: 7pt; font-weight: 700; vertical-align: -0.4mm; line-height: 1; }
 .cmi-opt { white-space: normal; }
