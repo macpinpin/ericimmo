@@ -3,10 +3,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import type { Property, Buyer, Match, Colleague } from '@/lib/types'
 import PropertyForm from './PropertyForm'
 import BuyerForm from './BuyerForm'
 import ColleagueForm from './ColleagueForm'
+import { CMI_TYPES, CMI_STATUS, ownersLabel, withDefaults, type Mandate } from '@/lib/cmi'
 import ListToolbar, { applyListFilters, collectPlaces, DEFAULT_FILTERS, type ListFilters } from './ListToolbar'
 
 const PROPERTY_LIST = {
@@ -433,7 +435,8 @@ export default function DashboardPage() {
   const router = useRouter()
   const [user, setUser] = useState<{ id: string; email: string } | null>(null)
   const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState<'properties' | 'buyers' | 'colleagues' | 'matches' | 'invite' | 'profile'>('properties')
+  const [tab, setTab] = useState<'properties' | 'cmi' | 'buyers' | 'colleagues' | 'matches' | 'invite' | 'profile'>('properties')
+  const [mandates, setMandates] = useState<Mandate[]>([])
   const [agentSlug, setAgentSlug] = useState<string | null>(null)
   const [profileComplete, setProfileComplete] = useState(true)
   const isAdmin = user?.email === 'macpinpin@me.com'
@@ -464,12 +467,13 @@ export default function DashboardPage() {
   async function checkUser() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/login'); return }
+    if (new URLSearchParams(window.location.search).get('tab') === 'cmi') setTab('cmi')
     setUser({ id: user.id, email: user.email! })
     supabase.from('agents').select('slug,phone,bio,photo_url').eq('id', user.id).single().then(({ data }) => {
       if (data?.slug) setAgentSlug(data.slug)
       if (!data?.phone && !data?.bio && !data?.photo_url) setProfileComplete(false)
     })
-    await Promise.all([loadProperties(user.id), loadBuyers(user.id), loadMatches(user.id), loadColleagues(user.id)])
+    await Promise.all([loadProperties(user.id), loadBuyers(user.id), loadMatches(user.id), loadColleagues(user.id), loadMandates(user.id)])
     setLoading(false)
   }
 
@@ -486,6 +490,17 @@ export default function DashboardPage() {
   async function loadColleagues(agentId: string) {
     const { data } = await supabase.from('colleagues').select('*').eq('agent_id', agentId).order('created_at', { ascending: false })
     setColleagues(data || [])
+  }
+
+  async function loadMandates(agentId: string) {
+    const { data } = await supabase.from('property_mandates').select('*').eq('agent_id', agentId).order('created_at', { ascending: false })
+    setMandates((data || []) as Mandate[])
+  }
+
+  async function deleteMandate(id: string) {
+    if (!confirm('Supprimer ce contrat ?')) return
+    await supabase.from('property_mandates').delete().eq('id', id)
+    setMandates(prev => prev.filter(m => m.id !== id))
   }
 
   async function loadMatches(agentId: string) {
@@ -717,6 +732,10 @@ export default function DashboardPage() {
             className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'properties' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
             🏡 Mes biens ({properties.length})
           </button>
+          <button onClick={() => setTab('cmi')}
+            className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'cmi' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+            📝 Mandats CMI ({mandates.length})
+          </button>
           <button onClick={() => setTab('buyers')}
             className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'buyers' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
             👤 Acheteurs ({buyers.length})
@@ -799,6 +818,61 @@ export default function DashboardPage() {
               </div>
               )}
               </>
+            )}
+          </>
+        )}
+
+        {/* ── Onglet Mandats (CMI) ── */}
+        {tab === 'cmi' && (
+          <>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Contrats de médiation immobilière</h2>
+                <p className="text-xs text-gray-400">Première étape de l&apos;angariação : préparez le CMI avant de mettre le bien en ligne.</p>
+              </div>
+              <Link href="/dashboard/cmi/nouveau"
+                className="bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors">
+                + Nouveau CMI
+              </Link>
+            </div>
+            {mandates.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-12 text-center">
+                <p className="text-4xl mb-3">📝</p>
+                <p className="text-gray-500 mb-4">Aucun contrat pour l&apos;instant</p>
+                <Link href="/dashboard/cmi/nouveau" className="bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors">
+                  Préparer mon premier CMI
+                </Link>
+              </div>
+            ) : (
+              <div className="grid gap-3">
+                {mandates.map(m => {
+                  const d = withDefaults(m.data)
+                  const place = [d.imovel.freguesia, d.imovel.concelho].filter(Boolean).join(', ')
+                  return (
+                    <div key={m.id} className="bg-white rounded-xl border border-gray-100 p-5 flex items-center gap-5">
+                      <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center text-lg flex-shrink-0">📝</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-semibold text-gray-900">{ownersLabel(d) || 'Vendeur non renseigné'}</h3>
+                          <span className="text-xs bg-orange-50 text-orange-600 px-2 py-0.5 rounded-full font-medium">{CMI_TYPES[m.contract_type]?.fr}</span>
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${CMI_STATUS[m.status]?.bg}`}>{CMI_STATUS[m.status]?.label}</span>
+                          {d.registo && <span className="text-xs text-gray-400">N.º {d.registo}</span>}
+                        </div>
+                        <div className="flex gap-4 mt-1 text-xs text-gray-400 flex-wrap">
+                          {(d.imovel.morada || place) && <span>📍 {[d.imovel.morada, place].filter(Boolean).join(' – ')}</span>}
+                          {m.price != null && <span className="font-semibold text-orange-500">{new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(m.price)}</span>}
+                          <span>🕐 {new Date(m.created_at).toLocaleDateString('fr-FR')}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <Link href={`/dashboard/cmi/${m.id}/imprimer`} className="text-sm text-gray-400 hover:text-gray-700 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors">📄 Contrat</Link>
+                        <Link href={`/dashboard/cmi/${m.id}`} className="text-sm text-gray-400 hover:text-gray-700 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors">Modifier</Link>
+                        <button onClick={() => deleteMandate(m.id)} className="text-sm text-red-400 hover:text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors">Supprimer</button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
             )}
           </>
         )}
